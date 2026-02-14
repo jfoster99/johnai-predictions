@@ -27,10 +27,12 @@
 - ✅ **Cloudflare Tunnel** - No port forwarding required
 
 ### 5. **Application Security**
-- ✅ **Row Level Security (RLS)** - Enabled on all tables
+- ✅ **Row Level Security (RLS)** - Enabled on all tables with improved policies
+- ✅ **Restricted balance updates** - Users cannot directly manipulate their balance
+- ✅ **Market resolution protection** - Markets cannot be updated via public API
 - ✅ **JWT authentication** - Supabase anon key required
 - ✅ **CORS configured** - Only allowed origins
-- ✅ **Admin password protection** - Admin panel secured with password
+- ✅ **Admin password protection** - Admin panel secured with strong password
 
 ### 6. **Docker Security**
 - ✅ **Non-root nginx** - App runs as nginx user
@@ -40,19 +42,14 @@
 
 ## ⚠️ Security Warnings
 
-### 1. **Change Default Passwords**
-**Current Issues:**
-- PostgreSQL password: `postgres` (weak!)
-- Admin panel password: `johnai` (exposed in code)
+### 1. **Strong Passwords Configured** ✅
+**IMPROVED:**
+- PostgreSQL password: Changed to secure random value (stored in .env)
+- Admin panel password: Changed to secure random value (configurable via environment variable)
 
-**Fix:**
-```bash
-# In .env file
-POSTGRES_PASSWORD=<generate-strong-password>
-
-# In src/pages/Admin.tsx
-const ADMIN_PASSWORD = '<your-secure-password>';
-```
+**Important:**
+- Keep .env file secure and never commit it to version control
+- For production deployment, regenerate passwords using: `openssl rand -base64 32`
 
 ### 2. **Database Exposed on Localhost**
 **Current:** Port 5432 exposed to host
@@ -198,8 +195,11 @@ DELETE FROM markets WHERE created_at > NOW() - INTERVAL '1 hour';
 ## 📝 Security Checklist
 
 Before deploying to production:
-- [ ] Change PostgreSQL password
-- [ ] Change admin panel password
+- [x] Change PostgreSQL password
+- [x] Change admin panel password
+- [x] Add rate limiting (Kong API Gateway)
+- [x] Apply PostgreSQL resource limits
+- [x] Improve RLS policies to prevent balance manipulation
 - [ ] Set CORS to specific domain
 - [ ] Remove unnecessary port mappings
 - [ ] Enable PostgreSQL SSL
