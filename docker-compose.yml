@@ -21,6 +21,12 @@ services:
     networks:
       - johnai-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # Supabase Studio (Database Management UI)
   studio:
@@ -54,6 +60,12 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
   # Kong API Gateway
   kong:
@@ -75,6 +87,12 @@ services:
     depends_on:
       - rest
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
   # Meta service for Studio
   meta:
@@ -93,6 +111,12 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
   # Your Application
   johnai-predictions:
@@ -113,6 +137,12 @@ services:
       - johnai-network
     depends_on:
       - kong
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
   # Cloudflared (optional)
   cloudflared:
@@ -126,6 +156,12 @@ services:
       - johnai-predictions
     profiles:
       - tunnel
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 32M
 
 networks:
   johnai-network:
