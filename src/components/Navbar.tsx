@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { TrendingUp, Plus, Wallet, Trophy, BarChart3 } from 'lucide-react';
+import { TrendingUp, Plus, Wallet, Trophy, BarChart3, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const Navbar = () => {
@@ -12,6 +12,7 @@ export const Navbar = () => {
     { to: '/create', label: 'Create', icon: Plus },
     { to: '/portfolio', label: 'Portfolio', icon: Wallet },
     { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { to: '/slots', label: 'Slots', icon: Sparkles },
   ];
 
   return (

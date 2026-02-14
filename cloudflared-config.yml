@@ -1,0 +1,10 @@
+tunnel: johnai-predictions
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # Route traffic to your local app
+  - hostname: predictions.johnfoster.cloud
+    service: http://johnai-predictions:80
+  
+  # Catch-all rule (required)
+  - service: http_status:404

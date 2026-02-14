@@ -11,6 +11,8 @@ import MarketPage from "./pages/MarketPage";
 import CreateMarket from "./pages/CreateMarket";
 import Portfolio from "./pages/Portfolio";
 import Leaderboard from "./pages/Leaderboard";
+import Admin from "./pages/Admin";
+import SlotMachine from "./pages/SlotMachine";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,7 +31,9 @@ const App = () => (
             <Route path="/market/:id" element={<MarketPage />} />
             <Route path="/create" element={<CreateMarket />} />
             <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/slots" element={<SlotMachine />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </UserProvider>

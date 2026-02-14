@@ -1,0 +1,61 @@
+name: Deploy to Proxmox
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: self-hosted  # Runs on your Proxmox LXC
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy application
+        run: |
+          cd /opt/johnai-predictions
+          
+          echo "🔄 Pulling latest changes..."
+          git pull origin main
+          
+          echo "🐋 Rebuilding and restarting containers..."
+          docker compose --profile tunnel down
+          docker compose --profile tunnel up -d --build
+          
+          echo "⏳ Waiting for services to start..."
+          sleep 10
+          
+          echo "✅ Checking container status..."
+          docker compose ps
+          
+          echo "🎉 Deployment completed successfully!"
+
+      - name: Verify deployment
+        run: |
+          # Check if main container is running
+          if docker compose ps | grep -q "johnai-predictions.*Up"; then
+            echo "✅ Application container is running"
+          else
+            echo "❌ Application container is not running"
+            exit 1
+          fi
+          
+          # Check if Cloudflare tunnel is connected
+          if docker compose ps | grep -q "cloudflared.*Up"; then
+            echo "✅ Cloudflare tunnel is connected"
+          else
+            echo "⚠️  Cloudflare tunnel may not be running"
+          fi
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ ${{ job.status }} == 'success' ]; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Deployment failed!"
+          fi

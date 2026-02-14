@@ -1,0 +1,42 @@
+_format_version: "2.1"
+
+services:
+  - name: rest
+    url: http://rest:3000
+    routes:
+      - name: rest-route
+        paths:
+          - /rest/v1/
+        strip_path: true
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - HEAD
+            - PUT
+            - PATCH
+            - POST
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Content-Type
+            - X-Client-Info
+            - apikey
+            - Prefer
+            - content-profile
+            - accept-profile
+            - x-client-info
+          exposed_headers:
+            - Content-Range
+            - Content-Length
+            - Content-Type
+            - Content-Profile
+          credentials: false
+          max_age: 3600
+          preflight_continue: false

@@ -19,7 +19,7 @@ const Index = () => {
       const { data, error } = await supabase
         .from('markets')
         .select('*')
-        .eq('status', 'active')
+        .in('status', ['active', 'resolved_yes', 'resolved_no'])
         .order('total_volume', { ascending: false });
       if (error) throw error;
       return data;

@@ -16,10 +16,12 @@ export const MarketCard = ({ market }: MarketCardProps) => {
   const yesPercent = Math.round(market.yes_price * 100);
   const noPercent = Math.round(market.no_price * 100);
   const isResolved = market.status !== 'active';
+  const resolvedYes = market.status === 'resolved_yes';
+  const resolvedNo = market.status === 'resolved_no';
 
   return (
     <Link to={`/market/${market.id}`}>
-      <Card className="group border-border bg-card hover:border-primary/30 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5">
+      <Card className={`group border-border bg-card hover:border-primary/30 transition-all duration-200 hover:shadow-lg hover:shadow-primary/5 ${isResolved ? 'opacity-90' : ''}`}>
         <CardContent className="p-5 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-display font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
@@ -30,11 +32,20 @@ export const MarketCard = ({ market }: MarketCardProps) => {
             </Badge>
           </div>
 
+          {isResolved && (
+            <div className="flex items-center justify-center">
+              <Badge className={`${resolvedYes ? 'bg-green-600' : 'bg-red-600'} text-white font-bold px-4 py-1`}>
+                Resolved: {resolvedYes ? 'YES ✓' : 'NO ✗'}
+              </Badge>
+            </div>
+          )}
+
           <div className="flex gap-2">
             <Button
               size="sm"
               className="flex-1 bg-primary/15 text-primary hover:bg-primary/25 border-0 font-display font-bold"
               variant="outline"
+              disabled={isResolved}
             >
               Yes {yesPercent}¢
             </Button>
@@ -42,6 +53,7 @@ export const MarketCard = ({ market }: MarketCardProps) => {
               size="sm"
               className="flex-1 bg-destructive/15 text-destructive hover:bg-destructive/25 border-0 font-display font-bold"
               variant="outline"
+              disabled={isResolved}
             >
               No {noPercent}¢
             </Button>
@@ -57,12 +69,6 @@ export const MarketCard = ({ market }: MarketCardProps) => {
               <span>{formatDistanceToNow(new Date(market.resolution_date), { addSuffix: true })}</span>
             </div>
           </div>
-
-          {isResolved && (
-            <Badge className={market.status === 'resolved_yes' ? 'bg-primary' : 'bg-destructive'}>
-              Resolved: {market.status === 'resolved_yes' ? 'YES' : 'NO'}
-            </Badge>
-          )}
         </CardContent>
       </Card>
     </Link>
