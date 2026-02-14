@@ -15,41 +15,75 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy application
+      - name: Deploy to app container via SSH
+        env:
+          APP_CONTAINER_IP: ${{ secrets.APP_CONTAINER_IP }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          cd /opt/johnai-predictions
+          # Setup SSH key
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           
-          echo "🔄 Pulling latest changes..."
-          git pull origin main
+          # Deploy via SSH
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@$APP_CONTAINER_IP << 'ENDSSH'
+            set -e
+            cd /opt/johnai-predictions
+            
+            echo "🔄 Pulling latest changes..."
+            git pull origin main
+            
+            echo "🐋 Rebuilding and restarting containers..."
+            docker compose --profile tunnel down
+            docker compose --profile tunnel up -d --build
+            
+            echo "⏳ Waiting for services to start..."
+            sleep 10
+            
+            echo "✅ Checking container status..."
+            docker compose ps
+            
+            echo "🎉 Deployment completed successfully!"
+          ENDSSH
           
-          echo "🐋 Rebuilding and restarting containers..."
-          docker compose --profile tunnel down
-          docker compose --profile tunnel up -d --build
-          
-          echo "⏳ Waiting for services to start..."
-          sleep 10
-          
-          echo "✅ Checking container status..."
-          docker compose ps
-          
-          echo "🎉 Deployment completed successfully!"
+          # Cleanup
+          rm -f ~/.ssh/deploy_key
 
       - name: Verify deployment
+        env:
+          APP_CONTAINER_IP: ${{ secrets.APP_CONTAINER_IP }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          # Check if main container is running
-          if docker compose ps | grep -q "johnai-predictions.*Up"; then
-            echo "✅ Application container is running"
-          else
-            echo "❌ Application container is not running"
-            exit 1
-          fi
+          # Setup SSH key
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
           
-          # Check if Cloudflare tunnel is connected
-          if docker compose ps | grep -q "cloudflared.*Up"; then
-            echo "✅ Cloudflare tunnel is connected"
-          else
-            echo "⚠️  Cloudflare tunnel may not be running"
-          fi
+          # Verify via SSH
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@$APP_CONTAINER_IP << 'ENDSSH'
+            cd /opt/johnai-predictions
+            
+            # Check if main container is running
+            if docker compose ps | grep -q "johnai-predictions.*Up"; then
+              echo "✅ Application container is running"
+            else
+              echo "❌ Application container is not running"
+              exit 1
+            fi
+            
+            # Check if Cloudflare tunnel is connected
+            if docker compose ps | grep -q "cloudflared.*Up"; then
+              echo "✅ Cloudflare tunnel is connected"
+            else
+              echo "❌ Cloudflare tunnel is not connected"
+              exit 1
+            fi
+          ENDSSH
+          
+          # Cleanup
+          rm -f ~/.ssh/deploy_key
 
       - name: Notify deployment status
         if: always()
