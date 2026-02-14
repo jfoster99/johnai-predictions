@@ -3,7 +3,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { UserProvider } from "@/contexts/UserContext";
+import { Navbar } from "@/components/Navbar";
+import { OnboardingModal } from "@/components/OnboardingModal";
 import Index from "./pages/Index";
+import MarketPage from "./pages/MarketPage";
+import CreateMarket from "./pages/CreateMarket";
+import Portfolio from "./pages/Portfolio";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +21,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <UserProvider>
+          <Navbar />
+          <OnboardingModal />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/market/:id" element={<MarketPage />} />
+            <Route path="/create" element={<CreateMarket />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </UserProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
