@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, TrendingUp, DollarSign } from 'lucide-react';
 
-const ADMIN_PASSWORD = 'johnai';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'saSWxEvS7F3yRImeSxJKzNMnyNJdVKcq';
 
 export default function Admin() {
   const navigate = useNavigate();
