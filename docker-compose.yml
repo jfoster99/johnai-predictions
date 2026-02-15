@@ -3,7 +3,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: johnai-postgres
-    userns_mode: "host"
+    cap_add:
+      - SYS_ADMIN
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
