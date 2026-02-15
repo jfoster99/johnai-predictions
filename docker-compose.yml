@@ -3,6 +3,10 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: johnai-postgres
+    security_opt:
+      - no-new-privileges:true
+    sysctls:
+      - net.ipv4.ip_unprivileged_port_start=0
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
