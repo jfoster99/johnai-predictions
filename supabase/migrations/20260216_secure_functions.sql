@@ -54,8 +54,8 @@ BEGIN
   WHERE id = p_user_id;
   
   -- Create trade record
-  INSERT INTO public.trades (user_id, market_id, side, shares, price, total_cost)
-  VALUES (p_user_id, p_market_id, p_side, p_shares, p_price, v_cost)
+  INSERT INTO public.trades (user_id, market_id, side, direction, shares, price, total_cost)
+  VALUES (p_user_id, p_market_id, p_side, 'buy', p_shares, p_price, v_cost)
   RETURNING id INTO v_trade_id;
   
   -- Update or create position
