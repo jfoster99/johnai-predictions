@@ -61,8 +61,22 @@ export default function Admin() {
       return;
     }
     
-    // Check password with constant-time comparison to prevent timing attacks
-    if (password === ADMIN_PASSWORD) {
+    // Simple constant-time comparison to prevent timing attacks
+    // Convert strings to buffers for comparison
+    const passwordBuffer = new TextEncoder().encode(password);
+    const adminPasswordBuffer = new TextEncoder().encode(ADMIN_PASSWORD);
+    
+    // Always compare full length to prevent timing attacks
+    let isValid = passwordBuffer.length === adminPasswordBuffer.length;
+    const compareLength = Math.max(passwordBuffer.length, adminPasswordBuffer.length);
+    
+    for (let i = 0; i < compareLength; i++) {
+      const a = i < passwordBuffer.length ? passwordBuffer[i] : 0;
+      const b = i < adminPasswordBuffer.length ? adminPasswordBuffer[i] : 0;
+      isValid = isValid && (a === b);
+    }
+    
+    if (isValid) {
       sessionStorage.setItem('admin_auth', 'true');
       setAuthenticated(true);
       loadData();

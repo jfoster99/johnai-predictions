@@ -283,7 +283,7 @@ const MarketPage = () => {
                     <Input
                       type="number"
                       min="1"
-                      max="10000"
+                      max="1000000"
                       step="1"
                       value={shares}
                       onChange={(e) => setShares(e.target.value)}
