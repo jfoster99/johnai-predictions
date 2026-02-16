@@ -9,10 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, TrendingUp, DollarSign } from 'lucide-react';
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
-
-const MAX_LOGIN_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'johnai';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -23,13 +20,6 @@ export default function Admin() {
   const [selectedMarket, setSelectedMarket] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
   const [johnbucksAmount, setJohnbucksAmount] = useState('');
-  const [loginAttempts, setLoginAttempts] = useState(() => {
-    return parseInt(sessionStorage.getItem('admin_login_attempts') || '0', 10);
-  });
-  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
-    const stored = sessionStorage.getItem('admin_lockout_until');
-    return stored ? parseInt(stored, 10) : null;
-  });
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem('admin_auth') === 'true';
@@ -57,39 +47,13 @@ export default function Admin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (lockoutUntil && Date.now() < lockoutUntil) {
-      const remainingSec = Math.ceil((lockoutUntil - Date.now()) / 1000);
-      toast.error(`Too many attempts. Try again in ${remainingSec}s`);
-      return;
-    }
-
-    if (!ADMIN_PASSWORD) {
-      toast.error('Admin access is not configured');
-      return;
-    }
-
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('admin_auth', 'true');
-      sessionStorage.removeItem('admin_login_attempts');
-      sessionStorage.removeItem('admin_lockout_until');
       setAuthenticated(true);
-      setLoginAttempts(0);
-      setLockoutUntil(null);
       loadData();
       toast.success('Admin access granted');
     } else {
-      const attempts = loginAttempts + 1;
-      setLoginAttempts(attempts);
-      sessionStorage.setItem('admin_login_attempts', String(attempts));
-      if (attempts >= MAX_LOGIN_ATTEMPTS) {
-        const lockout = Date.now() + LOCKOUT_DURATION_MS;
-        setLockoutUntil(lockout);
-        sessionStorage.setItem('admin_lockout_until', String(lockout));
-        toast.error('Too many failed attempts. Locked out for 5 minutes.');
-      } else {
-        toast.error('Invalid password');
-      }
+      toast.error('Invalid password');
     }
   };
 
@@ -189,7 +153,7 @@ export default function Admin() {
       setSelectedMarket('');
     } catch (error) {
       console.error('Resolution error:', error);
-      toast.error('Failed to resolve market. Please try again.');
+      toast.error(`Failed to resolve market: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -200,13 +164,8 @@ export default function Admin() {
     }
 
     const amount = parseFloat(johnbucksAmount);
-    if (isNaN(amount) || amount === 0) {
+    if (isNaN(amount)) {
       toast.error('Invalid amount');
-      return;
-    }
-
-    if (Math.abs(amount) > 1_000_000) {
-      toast.error('Amount exceeds maximum limit');
       return;
     }
 
