@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { DollarSign } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const OnboardingModal = () => {
   const { user, loading, setUser } = useUser();
@@ -18,17 +19,30 @@ export const OnboardingModal = () => {
     if (!name.trim()) return;
     setSubmitting(true);
 
-    const { data, error } = await supabase
-      .from('users')
-      .insert({ display_name: name.trim() })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert({ display_name: name.trim() })
+        .select()
+        .single();
 
-    if (data && !error) {
-      localStorage.setItem('johnai_user_id', data.id);
-      setUser(data);
+      if (error) {
+        console.error('User creation error:', error);
+        toast.error(`Failed to create account: ${error.message}`);
+        setSubmitting(false);
+        return;
+      }
+
+      if (data) {
+        localStorage.setItem('johnai_user_id', data.id);
+        setUser(data);
+        toast.success('Welcome! You received $10,000 JohnBucks!');
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast.error('An unexpected error occurred. Please try again.');
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
