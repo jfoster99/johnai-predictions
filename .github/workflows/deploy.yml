@@ -51,15 +51,15 @@ EOF
             set -e
             cd /opt/johnai-predictions
             
-            echo "🔄 Pulling latest changes..."
+            echo "Pulling latest changes..."
             git pull origin main
             
-            echo "🔐 Moving .env file into place..."
+            echo "Moving .env file into place..."
             sudo mv /tmp/.env .env
             sudo chown predictions:predictions .env
             chmod 600 .env
             
-            echo "🗄️ Applying database migrations..."
+            echo "Applying database migrations..."
             for migration in supabase/migrations/*.sql; do
               if [ -f "$migration" ]; then
                 echo "Applying $(basename $migration)..."
@@ -67,17 +67,17 @@ EOF
               fi
             done
             
-            echo "🐋 Rebuilding and restarting containers..."
+            echo "Rebuilding and restarting containers..."
             docker compose --profile tunnel down
             docker compose --profile tunnel up -d --build
             
-            echo "⏳ Waiting for services to start..."
+            echo "Waiting for services to start..."
             sleep 10
             
-            echo "✅ Checking container status..."
+            echo "Checking container status..."
             docker compose ps
             
-            echo "🎉 Deployment completed successfully!"
+            echo "Deployment completed successfully!"
           ENDSSH
           
           # Cleanup
@@ -100,17 +100,21 @@ EOF
             
             # Check if main container is running
             if docker compose ps | grep -q "johnai-predictions.*Up"; then
-              echo "✅ Application container is running"
+              echo "Application container is running"
             else
-              echo "❌ Application container is not running"
+              echo "Application container is not running"
               exit 1
             fi
             
             # Check if Cloudflare tunnel is connected
             if docker compose ps | grep -q "cloudflared.*Up"; then
-              echo "✅ Cloudflare tunnel is connected"
+              echo "Cloudflare tunnel is connected"
             else
-              echo "❌ Cloudflare tunnel is not connected"
+              echo "Cloudflare tunnel is not connected"
+              echo "✅ Cloudflare tunnel is connected"
+              echo "Cloudflare tunnel is connected"
+            else
+              echo "Cloudflare tunnel is not connected"
               exit 1
             fi
           ENDSSH
@@ -122,7 +126,7 @@ EOF
         if: always()
         run: |
           if [ ${{ job.status }} == 'success' ]; then
-            echo "✅ Deployment successful!"
+            echo "Deployment successful!"
           else
-            echo "❌ Deployment failed!"
+            echo "Deployment failed!"
           fi
