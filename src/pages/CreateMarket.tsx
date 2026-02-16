@@ -11,8 +11,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Eye } from 'lucide-react';
+import { z } from 'zod';
 
 const CATEGORIES = ['Politics', 'Sports', 'Crypto', 'Memes', 'Tech', 'Entertainment', 'General'];
+
+// Input validation schema to prevent XSS and injection attacks
+const marketSchema = z.object({
+  question: z.string()
+    .min(10, 'Question must be at least 10 characters')
+    .max(200, 'Question must be at most 200 characters')
+    .trim(),
+  description: z.string()
+    .max(2000, 'Description must be at most 2000 characters')
+    .trim()
+    .optional(),
+  category: z.enum(['Politics', 'Sports', 'Crypto', 'Memes', 'Tech', 'Entertainment', 'General']),
+  resolutionDate: z.string()
+    .refine((date) => {
+      const resDate = new Date(date);
+      const now = new Date();
+      return resDate > now;
+    }, 'Resolution date must be in the future')
+    .refine((date) => {
+      const resDate = new Date(date);
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 5);
+      return resDate < maxDate;
+    }, 'Resolution date must be within 5 years'),
+  resolutionCriteria: z.string()
+    .max(1000, 'Resolution criteria must be at most 1000 characters')
+    .trim()
+    .optional(),
+});
 
 const CreateMarket = () => {
   const navigate = useNavigate();
@@ -27,18 +57,32 @@ const CreateMarket = () => {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Please set up your account first');
-      if (!question.trim()) throw new Error('Question is required');
-      if (!resolutionDate) throw new Error('Resolution date is required');
+      
+      // Validate inputs using Zod schema
+      const validationResult = marketSchema.safeParse({
+        question: question,
+        description: description,
+        category: category,
+        resolutionDate: resolutionDate,
+        resolutionCriteria: resolutionCriteria,
+      });
+      
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        throw new Error(firstError.message);
+      }
+      
+      const validated = validationResult.data;
 
       const { data, error } = await supabase
         .from('markets')
         .insert({
           creator_id: user.id,
-          question: question.trim(),
-          description: description.trim() || null,
-          category,
-          resolution_date: new Date(resolutionDate).toISOString(),
-          resolution_criteria: resolutionCriteria.trim() || null,
+          question: validated.question,
+          description: validated.description || null,
+          category: validated.category,
+          resolution_date: new Date(validated.resolutionDate).toISOString(),
+          resolution_criteria: validated.resolutionCriteria || null,
         })
         .select()
         .single();
@@ -113,7 +157,9 @@ const CreateMarket = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="bg-secondary border-border min-h-[80px]"
+                maxLength={2000}
               />
+              <p className="text-xs text-muted-foreground">{description.length}/2000</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -150,7 +196,9 @@ const CreateMarket = () => {
                 value={resolutionCriteria}
                 onChange={(e) => setResolutionCriteria(e.target.value)}
                 className="bg-secondary border-border min-h-[60px]"
+                maxLength={1000}
               />
+              <p className="text-xs text-muted-foreground">{resolutionCriteria.length}/1000</p>
             </div>
 
             <Button

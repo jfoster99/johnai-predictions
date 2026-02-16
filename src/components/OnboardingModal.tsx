@@ -16,19 +16,44 @@ export const OnboardingModal = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    
+    // Input validation
+    const trimmedName = name.trim();
+    
+    if (!trimmedName) {
+      toast.error('Display name is required');
+      return;
+    }
+    
+    if (trimmedName.length < 2) {
+      toast.error('Display name must be at least 2 characters');
+      return;
+    }
+    
+    if (trimmedName.length > 50) {
+      toast.error('Display name must be at most 50 characters');
+      return;
+    }
+    
+    // Prevent XSS by checking for suspicious patterns
+    if (/<script|javascript:|on\w+=/i.test(trimmedName)) {
+      toast.error('Invalid characters in display name');
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
       const { data, error } = await supabase
         .from('users')
-        .insert({ display_name: name.trim() })
+        .insert({ display_name: trimmedName })
         .select()
         .single();
 
       if (error) {
         console.error('User creation error:', error);
-        toast.error(`Failed to create account: ${error.message}`);
+        // Don't expose detailed database errors to users
+        toast.error('Failed to create account. Please try a different name.');
         setSubmitting(false);
         return;
       }
@@ -61,7 +86,8 @@ export const OnboardingModal = () => {
             placeholder="Your display name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            maxLength={30}
+            maxLength={50}
+            minLength={2}
             className="bg-secondary border-border"
           />
           <Button type="submit" disabled={!name.trim() || submitting} className="w-full font-semibold">
