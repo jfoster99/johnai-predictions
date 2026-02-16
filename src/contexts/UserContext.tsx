@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 type User = Tables<'users'>;
 
@@ -10,7 +11,8 @@ interface UserContextType {
   setUser: (user: User | null) => void;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
-  signIn: (displayName: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType>({
@@ -20,6 +22,7 @@ const UserContext = createContext<UserContextType>({
   refreshUser: async () => {},
   signOut: async () => {},
   signIn: async () => {},
+  signUp: async () => {},
 });
 
 export const useUser = () => useContext(UserContext);
@@ -28,25 +31,25 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUser = async () => {
+  const loadUser = async (authUser: SupabaseUser | null) => {
+    if (!authUser) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Check if we have a user ID stored locally
-      const storedUserId = localStorage.getItem('johnai_user_id');
+      // Load user profile from database using auth_user_id
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle();
       
-      if (storedUserId) {
-        // Load user from database
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', storedUserId)
-          .maybeSingle();
-        
-        if (data && !error) {
-          setUser(data);
-        } else {
-          // User doesn't exist anymore, clear storage
-          localStorage.removeItem('johnai_user_id');
-        }
+      if (data && !error) {
+        setUser(data);
+      } else if (error) {
+        console.error('Error loading user profile:', error);
       }
     } catch (error) {
       console.error('Error loading user:', error);
@@ -56,48 +59,94 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUser = async () => {
-    if (user) {
-      const { data } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (data) setUser(data);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (authUser) {
+      await loadUser(authUser);
     }
   };
 
-  const signIn = async (displayName: string) => {
+  const signUp = async (email: string, password: string, displayName: string) => {
     try {
-      // Create a new user
-      const { data, error } = await supabase
-        .from('users')
-        .insert({ display_name: displayName })
-        .select()
-        .single();
+      // Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName,
+          },
+        },
+      });
       
-      if (error) throw error;
+      if (authError) throw authError;
       
-      if (data) {
-        setUser(data);
-        localStorage.setItem('johnai_user_id', data.id);
+      if (!authData.user) {
+        throw new Error('User creation failed');
       }
+
+      // The trigger will automatically create the user profile
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Load the user profile
+      await loadUser(authData.user);
     } catch (error) {
-      console.error('Error creating user:', error);
+      console.error('Error signing up:', error);
+      throw error;
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (authError) throw authError;
+      
+      if (!authData.user) {
+        throw new Error('Login failed');
+      }
+      
+      await loadUser(authData.user);
+    } catch (error) {
+      console.error('Error signing in:', error);
       throw error;
     }
   };
 
   const signOut = async () => {
-    localStorage.removeItem('johnai_user_id');
+    await supabase.auth.signOut();
     setUser(null);
   };
 
   useEffect(() => {
-    loadUser();
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        loadUser(session.user);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        loadUser(session.user);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, setUser, refreshUser, signOut, signIn }}>
+    <UserContext.Provider value={{ user, loading, setUser, refreshUser, signOut, signIn, signUp }}>
       {children}
     </UserContext.Provider>
   );
