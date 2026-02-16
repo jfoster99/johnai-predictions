@@ -9,9 +9,9 @@ import { Sparkles, TrendingDown } from 'lucide-react';
 const WHEEL_PRIZES = [
   { label: '5 JB', value: 5, color: '#ef4444', probability: 30 },
   { label: '10 JB', value: 10, color: '#f97316', probability: 25 },
-  { label: 'BROKE', value: -50, color: '#000000', probability: 20 },
+  { label: 'BROKE', value: 0, color: '#000000', probability: 20 },
   { label: '25 JB', value: 25, color: '#22c55e', probability: 15 },
-  { label: 'Tax Audit', value: -100, color: '#6b7280', probability: 8 },
+  { label: 'Tax Audit', value: 0, color: '#6b7280', probability: 8 },
   { label: '100 JB', value: 100, color: '#3b82f6', probability: 1.9 },
   { label: 'JACKPOT', value: 1000, color: '#fbbf24', probability: 0.1 },
 ];
@@ -95,8 +95,8 @@ export default function WheelSpin() {
       setLastSpin(new Date());
 
       if (prize.label === 'BROKE' || prize.label === 'Tax Audit') {
-        toast.error(`💀 ${prize.label}! Lost ${Math.abs(prize.value)} JB`, {
-          description: `Net: ${netWin} JB`,
+        toast.error(`💀 ${prize.label}! You get nothing!`, {
+          description: `Lost ${SPIN_COST} JB (skill issue)`,
         });
       } else if (prize.label === 'JACKPOT') {
         toast.success(`🎉 JACKPOT! Won ${prize.value} JB!`, {

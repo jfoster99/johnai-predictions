@@ -17,28 +17,28 @@ interface LootItem {
 
 const LOOT_ITEMS: LootItem[] = [
   // Common (60%)
-  { name: 'Rusty Penny', value: 1, rarity: 'common', emoji: '🪙' },
-  { name: 'Pocket Lint', value: 2, rarity: 'common', emoji: '🧶' },
-  { name: 'Used Napkin', value: 3, rarity: 'common', emoji: '🧻' },
-  { name: 'Expired Coupon', value: 5, rarity: 'common', emoji: '🎟️' },
-  { name: 'Bottle Cap', value: 8, rarity: 'common', emoji: '🍾' },
+  { name: 'Nuh Uh Card', value: 1, rarity: 'common', emoji: '🚫' },
+  { name: 'L + Ratio', value: 2, rarity: 'common', emoji: '💀' },
+  { name: 'Touch Grass Voucher', value: 3, rarity: 'common', emoji: '🌱' },
+  { name: 'Cringe Compilation', value: 5, rarity: 'common', emoji: '😬' },
+  { name: 'Mid NFT', value: 8, rarity: 'common', emoji: '🎨' },
   
   // Uncommon (25%)
-  { name: 'Shiny Rock', value: 20, rarity: 'uncommon', emoji: '🪨' },
-  { name: 'Participation Trophy', value: 30, rarity: 'uncommon', emoji: '🏆' },
-  { name: 'Fake Gold', value: 50, rarity: 'uncommon', emoji: '🥇' },
+  { name: 'Rizz License', value: 20, rarity: 'uncommon', emoji: '🪪' },
+  { name: 'Gyatt Certificate', value: 30, rarity: 'uncommon', emoji: '📜' },
+  { name: 'Skibidi Toilet', value: 50, rarity: 'uncommon', emoji: '🚽' },
   
   // Rare (10%)
-  { name: 'Lucky Charm', value: 100, rarity: 'rare', emoji: '🍀' },
-  { name: 'Magic Bean', value: 150, rarity: 'rare', emoji: '🫘' },
+  { name: 'Kirkified Meme', value: 100, rarity: 'rare', emoji: '🗿' },
+  { name: 'Sigma Mindset', value: 150, rarity: 'rare', emoji: '😎' },
   
   // Epic (4%)
-  { name: 'Diamond Hands', value: 300, rarity: 'epic', emoji: '💎' },
-  { name: 'Rare Pepe', value: 500, rarity: 'epic', emoji: '🐸' },
+  { name: '67 (Nice)', value: 300, rarity: 'epic', emoji: '6️⃣7️⃣' },
+  { name: 'Fanum Tax Exemption', value: 500, rarity: 'epic', emoji: '🍟' },
   
   // Legendary (1%)
-  { name: 'Money Printer', value: 1500, rarity: 'legendary', emoji: '🖨️' },
-  { name: 'Lambo', value: 2500, rarity: 'legendary', emoji: '🏎️' },
+  { name: 'Ohio Escape Plan', value: 1500, rarity: 'legendary', emoji: '🏃' },
+  { name: 'Grimace Shake', value: 2500, rarity: 'legendary', emoji: '🟣' },
 ];
 
 const RARITY_CHANCES = {
