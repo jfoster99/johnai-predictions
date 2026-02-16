@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { TrendingUp, Plus, Wallet, Trophy, BarChart3, Sparkles, Gift, CircleDollarSign, Package } from 'lucide-react';
+import { TrendingUp, Plus, Wallet, Trophy, BarChart3, Sparkles, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export const Navbar = () => {
@@ -13,9 +13,7 @@ export const Navbar = () => {
     { to: '/portfolio', label: 'Portfolio', icon: Wallet },
     { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { to: '/slots', label: 'Slots', icon: Sparkles },
-    { to: '/wheel', label: 'Wheel', icon: Gift },
     { to: '/lootbox', label: 'Boxes', icon: Package },
-    { to: '/loans', label: 'Loans', icon: CircleDollarSign },
   ];
 
   return (

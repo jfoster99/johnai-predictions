@@ -13,9 +13,7 @@ import Portfolio from "./pages/Portfolio";
 import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
 import SlotMachine from "./pages/SlotMachine";
-import WheelSpin from "./pages/WheelSpin";
 import LootBox from "./pages/LootBox";
-import LoanShark from "./pages/LoanShark";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,9 +35,7 @@ const App = () => (
             <Route path="/slots" element={<SlotMachine />} />
             <Route path="/wheel" element={<WheelSpin />} />
             <Route path="/lootbox" element={<LootBox />} />
-            <Route path="/loans" element={<LoanShark />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/lootbox" element={<LootBox />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </UserProvider>
