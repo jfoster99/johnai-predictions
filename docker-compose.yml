@@ -1,9 +1,8 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: johnai-postgres
-    privileged: true
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
