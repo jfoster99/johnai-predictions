@@ -7,14 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Shield, TrendingUp, DollarSign } from 'lucide-react';
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'johnai';
+import { Shield, DollarSign, AlertTriangle } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 export default function Admin() {
   const navigate = useNavigate();
-  const [authenticated, setAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
+  const { authUser } = useUser();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [markets, setMarkets] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [selectedMarket, setSelectedMarket] = useState('');
@@ -22,12 +22,23 @@ export default function Admin() {
   const [johnbucksAmount, setJohnbucksAmount] = useState('');
 
   useEffect(() => {
-    const isAuth = sessionStorage.getItem('admin_auth') === 'true';
-    if (isAuth) {
-      setAuthenticated(true);
+    checkAdminAccess();
+  }, [authUser]);
+
+  const checkAdminAccess = async () => {
+    if (!authUser) {
+      setLoading(false);
+      return;
+    }
+
+    // Check if user has admin role in metadata
+    const role = authUser.user_metadata?.role;
+    if (role === 'admin') {
+      setIsAdmin(true);
       loadData();
     }
-  }, []);
+    setLoading(false);
+  };
 
   const loadData = async () => {
     const { data: marketsData } = await supabase
@@ -45,119 +56,7 @@ export default function Admin() {
     if (usersData) setUsers(usersData);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('admin_auth', 'true');
-      setAuthenticated(true);
-      loadData();
-      toast.success('Admin access granted');
-    } else {
-      toast.error('Invalid password');
-    }
-  };
-
-  const resolveMarket = async (resolution: 'resolved_yes' | 'resolved_no') => {
-    if (!selectedMarket) {
-      toast.error('Please select a market');
-      return;
-    }
-
-    try {
-      console.log('Resolving market:', selectedMarket, 'as', resolution);
-      
-      // Get all positions for this market
-      const { data: positions, error: positionsError } = await supabase
-        .from('positions')
-        .select('*')
-        .eq('market_id', selectedMarket);
-
-      console.log('Positions found:', positions);
-      if (positionsError) {
-        console.error('Error fetching positions:', positionsError);
-        throw positionsError;
-      }
-
-      // Calculate payouts
-      const winningSide = resolution === 'resolved_yes' ? 'yes' : 'no';
-      const payouts: { [userId: string]: number } = {};
-
-      positions?.forEach(position => {
-        console.log('Checking position:', position.side, 'vs winning side:', winningSide, 'shares:', position.shares);
-        if (position.side === winningSide && parseFloat(position.shares) > 0) {
-          // Each winning share pays $1
-          const payout = parseFloat(position.shares);
-          payouts[position.user_id] = (payouts[position.user_id] || 0) + payout;
-          console.log('Added payout:', payout, 'for user:', position.user_id);
-        }
-      });
-
-      console.log('Total payouts:', payouts);
-
-      // Update user balances
-      for (const [userId, payout] of Object.entries(payouts)) {
-        const { data: userData, error: userFetchError } = await supabase
-          .from('users')
-          .select('balance')
-          .eq('id', userId)
-          .single();
-
-        if (userFetchError) {
-          console.error('Error fetching user:', userFetchError);
-          throw userFetchError;
-        }
-
-        console.log('Current balance for user', userId, ':', userData.balance);
-        const newBalance = parseFloat(userData.balance) + payout;
-        console.log('New balance:', newBalance);
-        
-        const { error: updateError } = await supabase.rpc('update_user_balance', {
-          user_id_param: userId,
-          new_balance: newBalance
-        });
-
-        if (updateError) {
-          console.error('Error updating balance:', updateError);
-          throw updateError;
-        }
-        console.log('Balance updated successfully');
-      }
-
-      // Update market status
-      const { error: marketError } = await supabase
-        .from('markets')
-        .update({ status: resolution })
-        .eq('id', selectedMarket);
-
-      if (marketError) {
-        console.error('Error updating market:', marketError);
-        throw marketError;
-      }
-
-      const totalPaidOut = Object.values(payouts).reduce((sum, val) => sum + val, 0);
-      const numWinners = Object.keys(payouts).length;
-      
-      if (numWinners > 0) {
-        toast.success(
-          `Market resolved as ${resolution === 'resolved_yes' ? 'YES' : 'NO'}. ` +
-          `Paid out $${totalPaidOut.toFixed(2)} to ${numWinners} winner(s).`
-        );
-      } else {
-        toast.success(
-          `Market resolved as ${resolution === 'resolved_yes' ? 'YES' : 'NO'}. ` +
-          `No winning positions found.`
-        );
-      }
-      
-      loadData();
-      setSelectedMarket('');
-    } catch (error) {
-      console.error('Resolution error:', error);
-      toast.error(`Failed to resolve market: ${error.message || 'Unknown error'}`);
-    }
-  };
-
-  const giveJohnbucks = async () => {
+  const grantJohnbucks = async () => {
     if (!selectedUser || !johnbucksAmount) {
       toast.error('Please select a user and enter an amount');
       return;
@@ -165,63 +64,131 @@ export default function Admin() {
 
     const amount = parseFloat(johnbucksAmount);
     if (isNaN(amount)) {
-      toast.error('Invalid amount');
+      toast.error('Invalid amount: must be a number');
+      return;
+    }
+    if (amount < 0) {
+      toast.error('Invalid amount: cannot be negative');
+      return;
+    }
+    if (amount > 1000000) {
+      toast.error('Invalid amount: maximum is 1,000,000');
+      return;
+    }
+    if (!Number.isFinite(amount)) {
+      toast.error('Invalid amount: must be a finite number');
+      return;
+    }
+    if (amount !== Math.floor(amount)) {
+      toast.error('Invalid amount: must be a whole number');
       return;
     }
 
-    const user = users.find(u => u.id === selectedUser);
-    if (!user) return;
+    try {
+      const { error } = await supabase.rpc('admin_grant_johnbucks', {
+        p_user_id: selectedUser,
+        p_amount: amount,
+      });
 
-    const newBalance = parseFloat(user.balance) + amount;
-    const { error } = await supabase.rpc('update_user_balance', {
-      user_id_param: selectedUser,
-      new_balance: newBalance
-    });
+      if (error) throw error;
 
-    if (error) {
-      toast.error('Failed to update balance');
-    } else {
-      toast.success(`Added ${amount} JohnBucks to ${user.display_name}`);
-      loadData();
-      setSelectedUser('');
+      toast.success(`Granted ${amount.toLocaleString()} JohnBucks!`);
       setJohnbucksAmount('');
+      setSelectedUser('');
+      loadData();
+    } catch (error: any) {
+      console.error('Grant error:', error);
+      const errorMessage = error.message || 'Unknown error';
+      if (errorMessage.includes('Unauthorized')) {
+        toast.error('Admin access required');
+      } else if (errorMessage.includes('not found')) {
+        toast.error('User not found');
+      } else {
+        toast.error('Failed to grant JohnBucks');
+      }
     }
   };
 
-  if (!authenticated) {
+  const resolveMarket = async (outcome: 'yes' | 'no') => {
+    if (!selectedMarket) {
+      toast.error('Please select a market');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.rpc('resolve_market', {
+        p_market_id: selectedMarket,
+        p_outcome: outcome,
+      });
+
+      if (error) throw error;
+
+      toast.success(`Market resolved as ${outcome.toUpperCase()}!`);
+      setSelectedMarket('');
+      loadData();
+    } catch (error: any) {
+      console.error('Resolution error:', error);
+      const errorMessage = error.message || 'Unknown error';
+      if (errorMessage.includes('Unauthorized')) {
+        toast.error('Only creator or admin can resolve markets');
+      } else if (errorMessage.includes('not found')) {
+        toast.error('Market not found');
+      } else {
+        toast.error(`Failed to resolve market: ${errorMessage}`);
+      }
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-primary/20">
-          <CardHeader className="text-center">
-            <Shield className="mx-auto h-12 w-12 text-primary mb-4" />
-            <CardTitle className="font-display text-3xl">Admin Access</CardTitle>
-            <CardDescription>Enter password to access admin panel</CardDescription>
+      <div className="container py-8">
+        <div className="max-w-2xl mx-auto text-center">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <div className="container py-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-6 w-6 text-yellow-500" />
+              <CardTitle>Authentication Required</CardTitle>
+            </div>
+            <CardDescription>
+              You must be signed in to access the admin panel
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter admin password"
-                  className="bg-secondary"
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full"
-                onClick={() => navigate('/')}
-              >
-                Back to Home
-              </Button>
-            </form>
+            <Button onClick={() => navigate('/')}>
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="container py-8">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-6 w-6 text-red-500" />
+              <CardTitle>Access Denied</CardTitle>
+            </div>
+            <CardDescription>
+              You do not have admin privileges. This incident has been logged.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => navigate('/')}>
+              Return to Home
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -229,132 +196,100 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      <div className="container max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="font-display text-4xl font-bold">
-            <Shield className="inline mr-2 h-8 w-8 text-primary" />
-            Admin Panel
-          </h1>
-          <Button variant="outline" onClick={() => navigate('/')}>
-            Back to Home
-          </Button>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Resolve Markets */}
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Resolve Market
-              </CardTitle>
-              <CardDescription>
-                Manually resolve prediction markets
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Select Market</Label>
-                <Select value={selectedMarket} onValueChange={setSelectedMarket}>
-                  <SelectTrigger className="bg-secondary">
-                    <SelectValue placeholder="Choose a market" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {markets.map((market) => (
-                      <SelectItem key={market.id} value={market.id}>
-                        {market.question}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => resolveMarket('resolved_yes')}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  Resolve YES
-                </Button>
-                <Button
-                  onClick={() => resolveMarket('resolved_no')}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
-                >
-                  Resolve NO
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Give JohnBucks */}
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Give JohnBucks
-              </CardTitle>
-              <CardDescription>
-                Add JohnBucks to user accounts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Select User</Label>
-                <Select value={selectedUser} onValueChange={setSelectedUser}>
-                  <SelectTrigger className="bg-secondary">
-                    <SelectValue placeholder="Choose a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.display_name} (${parseFloat(user.balance).toLocaleString()})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Amount</Label>
-                <Input
-                  type="number"
-                  value={johnbucksAmount}
-                  onChange={(e) => setJohnbucksAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  className="bg-secondary"
-                />
-              </div>
-              <Button onClick={giveJohnbucks} className="w-full">
-                Add JohnBucks
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Markets Overview */}
-        <Card className="border-primary/20">
+    <div className="container py-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <Card>
           <CardHeader>
-            <CardTitle>Active Markets</CardTitle>
+            <div className="flex items-center gap-2">
+              <Shield className="h-6 w-6 text-primary" />
+              <CardTitle>Admin Panel</CardTitle>
+            </div>
+            <CardDescription>
+              Manage markets and grant JohnBucks
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+        </Card>
+
+        {/* Grant JohnBucks */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              <CardTitle>Grant JohnBucks</CardTitle>
+            </div>
+            <CardDescription>
+              Give JohnBucks to users
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              {markets.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">No active markets</p>
-              ) : (
-                markets.map((market) => (
-                  <div key={market.id} className="p-3 bg-secondary rounded-lg flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold">{market.question}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Resolves: {new Date(market.resolution_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Volume</p>
-                      <p className="font-bold">${parseFloat(market.total_volume).toFixed(0)}</p>
-                    </div>
-                  </div>
-                ))
-              )}
+              <Label htmlFor="grant-user">Select User</Label>
+              <Select value={selectedUser} onValueChange={setSelectedUser}>
+                <SelectTrigger id="grant-user">
+                  <SelectValue placeholder="Choose a user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.display_name} (${user.balance})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="grant-amount">Amount (max 1,000,000)</Label>
+              <Input
+                id="grant-amount"
+                type="number"
+                min="1"
+                max="1000000"
+                step="1"
+                value={johnbucksAmount}
+                onChange={(e) => setJohnbucksAmount(e.target.value)}
+                placeholder="Enter amount"
+              />
+            </div>
+
+            <Button onClick={grantJohnbucks} className="w-full">
+              Grant JohnBucks
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Resolve Markets */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Resolve Markets</CardTitle>
+            <CardDescription>
+              Set the outcome of active markets
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="resolve-market">Select Market</Label>
+              <Select value={selectedMarket} onValueChange={setSelectedMarket}>
+                <SelectTrigger id="resolve-market">
+                  <SelectValue placeholder="Choose a market" />
+                </SelectTrigger>
+                <SelectContent>
+                  {markets.map((market) => (
+                    <SelectItem key={market.id} value={market.id}>
+                      {market.question}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Button onClick={() => resolveMarket('yes')} className="w-full">
+                Resolve YES
+              </Button>
+              <Button onClick={() => resolveMarket('no')} variant="secondary" className="w-full">
+                Resolve NO
+              </Button>
             </div>
           </CardContent>
         </Card>
