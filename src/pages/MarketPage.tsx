@@ -58,8 +58,8 @@ const MarketPage = () => {
       const price = side === 'yes' ? market.yes_price : market.no_price;
 
       // Use secure trade execution function
+      // User ID is derived from auth token on server-side for security
       const { data, error } = await supabase.rpc('execute_trade', {
-        p_user_id: user.id,
         p_market_id: market.id,
         p_side: side,
         p_shares: numShares,

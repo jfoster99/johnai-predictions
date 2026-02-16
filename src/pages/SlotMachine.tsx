@@ -99,8 +99,8 @@ export default function SlotMachine() {
         
         // SECURITY FIX: Call secure server-side function instead of client-side calculation
         // The server generates random symbols and calculates winnings to prevent manipulation
+        // User ID is derived from auth token on server-side for security
         supabase.rpc('play_slots', {
-          p_user_id: user.id,
           p_bet_amount: betAmount
         }).then(({ data, error }) => {
           if (error) {
