@@ -11,6 +11,7 @@ import CreateMarket from "./pages/CreateMarket";
 import Portfolio from "./pages/Portfolio";
 import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
+import ClaimAdmin from "./pages/ClaimAdmin";
 import SlotMachine from "./pages/SlotMachine";
 import LootBox from "./pages/LootBox";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/lootbox" element={<LootBox />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/claim-admin" element={<ClaimAdmin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </UserProvider>
