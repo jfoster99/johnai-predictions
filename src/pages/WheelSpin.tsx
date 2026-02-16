@@ -154,7 +154,7 @@ export default function WheelSpin() {
                     }}
                   >
                     <div
-                      className="text-white font-bold text-sm mt-8 drop-shadow-lg"
+                      className="text-white font-bold text-xs mt-12 drop-shadow-lg max-w-[60px] text-center leading-tight"
                       style={{
                         transform: `rotate(${segmentAngle / 2}deg)`,
                       }}
