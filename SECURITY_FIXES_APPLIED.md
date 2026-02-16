@@ -24,7 +24,7 @@ SELECT update_user_balance('user-uuid', 100);
 -- Test 2: User A cannot modify User B's balance
 -- Login as User A (uuid: aaa-aaa-aaa)
 SELECT update_user_balance('bbb-bbb-bbb', 0);
--- Expected: "Unauthorized: Cannot modify another users balance" ✓
+-- Expected: "Unauthorized: Cannot modify another user's balance" ✓
 
 -- Test 3: User can modify their own balance
 -- Login as User A (uuid: aaa-aaa-aaa)

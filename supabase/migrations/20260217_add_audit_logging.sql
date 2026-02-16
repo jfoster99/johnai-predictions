@@ -113,10 +113,10 @@ BEGIN
   END IF;
 
   -- Validate amount
-  IF p_amount IS NULL OR NOT (p_amount >= 0 AND p_amount <= 1000000) THEN
+  IF p_amount IS NULL OR p_amount < 0 OR p_amount > 1000000 THEN
     PERFORM log_audit_event('admin_grant_johnbucks', 'user', p_user_id, 
       jsonb_build_object('error', 'Invalid amount', 'amount', p_amount), false);
-    RAISE EXCEPTION 'Invalid amount: must be between 0 and 1,000,000';
+    RAISE EXCEPTION 'Invalid amount: must be from 0 to 1,000,000';
   END IF;
 
   IF NOT (p_amount = FLOOR(p_amount)) THEN

@@ -129,7 +129,7 @@ BEGIN
   END IF;
 
   IF p_shares <= 0 OR p_shares > 1000000 THEN
-    RAISE EXCEPTION 'Invalid shares: must be between 1 and 1,000,000';
+    RAISE EXCEPTION 'Invalid shares: must be from 1 to 1,000,000 (inclusive)';
   END IF;
 
   IF p_price < 0 OR p_price > 100 THEN
