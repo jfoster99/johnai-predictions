@@ -4,9 +4,9 @@ Your JohnAI Predictions app is now ready for Docker deployment with Cloudflare T
 
 ## What Was Changed
 
-### 1. Removed Loveable.ai Branding ✓
+### 1. Removed External Dependencies ✓
 - Updated `index.html` with JohnAI Predictions branding
-- Removed `lovable-tagger` from `package.json` and `vite.config.ts`
+- Cleaned up `package.json` dependencies
 - Rewrote `README.md` with project-specific information
 
 ### 2. Created Docker Configuration ✓

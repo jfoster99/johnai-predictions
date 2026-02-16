@@ -72,6 +72,11 @@ CREATE POLICY "Anyone can read positions" ON public.positions FOR SELECT USING (
 CREATE POLICY "Anyone can insert positions" ON public.positions FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can update positions" ON public.positions FOR UPDATE USING (true);
 
--- Enable realtime for markets and trades
-ALTER PUBLICATION supabase_realtime ADD TABLE public.markets;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.trades;
+-- Enable realtime for markets and trades (only if publication exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.markets;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.trades;
+  END IF;
+END $$;

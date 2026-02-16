@@ -1,87 +1,46 @@
 # JohnAI Predictions
 
-AI-Powered Prediction Markets platform.
+A prediction markets platform where users can trade shares on future events using virtual currency (JohnBucks).
 
-## Technologies
+## Overview
 
-This project is built with:
+JohnAI Predictions is a Polymarket/Kalshi-style prediction market application built with:
+- **Frontend**: React + TypeScript + Vite
+- **UI**: Shadcn/ui components with Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + PostgREST)
+- **Deployment**: Docker Compose with optional Cloudflare Tunnel
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- Supabase
+## Features
 
-## Local Development
+- **Anonymous Trading**: Create an account with just a username, get 10,000 JohnBucks to start
+- **Prediction Markets**: Browse and trade on YES/NO markets for future events
+- **Market Creation**: Anyone can create new prediction markets
+- **Portfolio Tracking**: View your positions, trades, and profit/loss
+- **Leaderboard**: See top traders by balance
+- **Games**: Slot machine and loot box for fun
 
-### Prerequisites
+## Quick Start
 
-- Node.js & npm (or bun) - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Local Development
 
-### Setup
+1. Install Dependencies: `npm install`
+2. Set Up Environment: `cp .env.example .env`
+3. Start Database: `docker compose up -d postgres`
+4. Start Dev Server: `npm run dev`
+5. Build for Production: `npm run build`
 
-```sh
-# Clone the repository
-git clone <YOUR_GIT_URL>
+## Key Concepts
 
-# Navigate to the project directory
-cd johnai-predictions
+### Users
+- Simple username-based accounts
+- Start with 10,000 JohnBucks
+- No passwords required (local development mode)
 
-# Install dependencies
-npm install
-# or if using bun:
-# bun install
+### Markets
+- Binary YES/NO prediction markets
+- Automated market maker (AMM) for pricing
+- Resolve to YES or NO when event occurs
 
-# Start the development server
-npm run dev
-```
+## License
 
-The app will be available at `http://localhost:8080`
-
-## Docker Deployment
-
-### Prerequisites
-
-- Docker and Docker Compose installed
-- Cloudflared installed (for tunnel)
-
-### Build and Run with Docker
-
-```sh
-# Build and start the containers
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop the containers
-docker-compose down
-```
-
-### Cloudflared Tunnel Setup
-
-1. Install cloudflared: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/
-
-2. Authenticate:
-```sh
-cloudflared tunnel login
-```
-
-3. Create a tunnel:
-```sh
-cloudflared tunnel create johnai-predictions
-```
-
-4. Configure DNS for your domain `predictions.johnfoster.cloud` to point to the tunnel.
-
-5. Start the tunnel:
-```sh
-cloudflared tunnel run johnai-predictions
-```
-
-The tunnel configuration is in `cloudflared-config.yml`.
-
-## Environment Variables
-
-Create a `.env` file based on your Supabase configuration with the necessary API keys and URLs.
+MIT License - See LICENSE file for details.
