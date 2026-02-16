@@ -24,11 +24,23 @@ export default function ClaimAdmin() {
     setResult(null);
 
     try {
+      console.log('Calling claim_admin_status...');
       const { data, error } = await supabase.rpc('claim_admin_status');
+      
+      console.log('RPC response:', { data, error });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error('No data returned from RPC');
+        throw new Error('No response from server');
+      }
 
       setResult(data);
+      console.log('Result set:', data);
 
       if (data.success) {
         toast.success('Admin status granted! Please refresh the page.');
@@ -36,13 +48,16 @@ export default function ClaimAdmin() {
           window.location.reload();
         }, 2000);
       } else {
-        toast.error(data.error || 'Failed to claim admin status');
+        const errorMsg = data.error || data.message || 'Failed to claim admin status';
+        console.error('Operation failed:', errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error: any) {
-      console.error('Error claiming admin:', error);
+      console.error('Exception caught:', error);
       toast.error(error.message || 'Failed to claim admin status');
       setResult({ success: false, message: error.message });
     } finally {
+      console.log('Finally block - setting loading to false');
       setLoading(false);
     }
   };
