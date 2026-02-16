@@ -16,8 +16,13 @@ The `.env` file containing sensitive credentials was previously committed to thi
    # Generate new Cloudflare tunnel token
    # Visit: https://dash.cloudflare.com/
    
-   # Change PostgreSQL password
-   docker exec johnai-postgres psql -U postgres -c "ALTER USER postgres PASSWORD 'NEW_SECURE_PASSWORD';"
+   # Change PostgreSQL password (use interactive mode to avoid shell history)
+   docker exec -it johnai-postgres psql -U postgres
+   # Then in psql prompt:
+   # postgres=# \password postgres
+   # Enter new password: [enter secure password]
+   # Enter it again: [enter secure password]
+   # postgres=# \q
    
    # Update .env file with new credentials
    # Generate secure admin password
