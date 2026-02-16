@@ -29,16 +29,8 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           
-          # Deploy via SSH
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@$APP_CONTAINER_IP << ENDSSH
-            set -e
-            cd /opt/johnai-predictions
-            
-            echo "🔄 Pulling latest changes..."
-            git pull origin main
-            
-            echo "🔐 Creating .env file from secrets..."
-            cat > .env << 'ENVEOF'
+          # Create .env content locally
+          cat > /tmp/deploy_env << EOF
 VITE_SUPABASE_PROJECT_ID="local"
 VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
 VITE_SUPABASE_URL="https://predictions.johnfoster.cloud/api"
@@ -49,7 +41,23 @@ POSTGRES_USER="postgres"
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
 VITE_ADMIN_PASSWORD=${VITE_ADMIN_PASSWORD}
-ENVEOF
+EOF
+          
+          # Copy .env file to remote
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no /tmp/deploy_env ${DEPLOY_USER}@$APP_CONTAINER_IP:/tmp/.env
+          
+          # Deploy via SSH
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@$APP_CONTAINER_IP << 'ENDSSH'
+            set -e
+            cd /opt/johnai-predictions
+            
+            echo "🔄 Pulling latest changes..."
+            git pull origin main
+            
+            echo "🔐 Moving .env file into place..."
+            sudo mv /tmp/.env .env
+            sudo chown predictions:predictions .env
+            chmod 600 .env
             
             echo "🗄️ Applying database migrations..."
             for migration in supabase/migrations/*.sql; do
