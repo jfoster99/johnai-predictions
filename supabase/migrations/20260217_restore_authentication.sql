@@ -378,7 +378,7 @@ BEGIN
       SELECT id FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'
     ))
   ) THEN
-    RAISE EXCEPTION 'Unauthorized: Cannot modify another users balance';
+    RAISE EXCEPTION 'Unauthorized: Cannot modify another user''s balance';
   END IF;
 
   -- Validate amount
@@ -453,4 +453,4 @@ GRANT INSERT, UPDATE ON public.markets TO authenticated;
 GRANT INSERT ON public.trades TO authenticated;
 GRANT INSERT, UPDATE ON public.positions TO authenticated;
 
-COMMENT ON MIGRATION IS 'Restore proper authentication with email and password';
+-- Migration complete: Restore proper authentication with email and password
