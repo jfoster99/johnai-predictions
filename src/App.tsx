@@ -33,9 +33,9 @@ const App = () => (
             <Route path="/create" element={<CreateMarket />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/slots" element={<SlotMachine />} />
-            <Route path="/wheel" element={<WheelSpin />} />
             <Route path="/lootbox" element={<LootBox />} />
-            <Route path="/lootbox" element={<LootBox />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </UserProvider>
