@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { UserProvider } from "@/contexts/UserContext";
 import { Navbar } from "@/components/Navbar";
-import { OnboardingModal } from "@/components/OnboardingModal";
 import Index from "./pages/Index";
 import MarketPage from "./pages/MarketPage";
 import CreateMarket from "./pages/CreateMarket";
@@ -26,7 +25,6 @@ const App = () => (
       <BrowserRouter>
         <UserProvider>
           <Navbar />
-          <OnboardingModal />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/market/:id" element={<MarketPage />} />
