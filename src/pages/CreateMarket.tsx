@@ -28,17 +28,20 @@ const CreateMarket = () => {
     mutationFn: async () => {
       if (!user) throw new Error('Please set up your account first');
       if (!question.trim()) throw new Error('Question is required');
+      if (question.trim().length > 200) throw new Error('Question is too long');
       if (!resolutionDate) throw new Error('Resolution date is required');
+
+      const sanitize = (str: string) => str.replace(/[<>]/g, '');
 
       const { data, error } = await supabase
         .from('markets')
         .insert({
           creator_id: user.id,
-          question: question.trim(),
-          description: description.trim() || null,
+          question: sanitize(question.trim()),
+          description: description.trim() ? sanitize(description.trim()) : null,
           category,
           resolution_date: new Date(resolutionDate).toISOString(),
-          resolution_criteria: resolutionCriteria.trim() || null,
+          resolution_criteria: resolutionCriteria.trim() ? sanitize(resolutionCriteria.trim()) : null,
         })
         .select()
         .single();

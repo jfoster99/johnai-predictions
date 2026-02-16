@@ -2,13 +2,21 @@
 
 ## ✅ Security Measures Implemented
 
-### 1. **Rate Limiting (NEW)**
-- **100 requests/minute per IP**
-- **1,000 requests/hour per IP**
-- Prevents brute force attacks and API abuse
-- Protects database from spam
+### 1. **Secrets Management (FIXED)**
+- **Admin password**: Moved from hardcoded value to environment variable (`VITE_ADMIN_PASSWORD`)
+- **Database credentials**: Moved from hardcoded values to environment variables in `docker-compose.yml`
+- **JWT secret**: Moved from hardcoded value to environment variable (`JWT_SECRET`)
+- **Service keys**: Moved from hardcoded values to environment variables
+- **`.env` file**: Removed from git tracking to prevent secret exposure
 
-### 2. **Request Size Limiting (NEW)**
+### 2. **Input Validation & XSS Prevention (FIXED)**
+- **Display name sanitization**: HTML angle brackets stripped, length validated (1-30 chars)
+- **Market creation sanitization**: Question and description fields stripped of `<>` characters
+- **Share amount limits**: Maximum 10,000 shares per trade enforced
+- **Bet amount limits**: Maximum 10,000 JohnBucks per slot machine spin
+- **Question length validation**: Maximum 200 characters enforced
+
+### 3. **Request Size Limiting**
 - **10 MB maximum request size**
 - Prevents large payload attacks
 - Protects disk space and memory
@@ -29,8 +37,12 @@
 ### 5. **Application Security**
 - ✅ **Row Level Security (RLS)** - Enabled on all tables
 - ✅ **JWT authentication** - Supabase anon key required
-- ✅ **CORS configured** - Only allowed origins
-- ✅ **Admin password protection** - Admin panel secured with password
+- ✅ **CORS restricted** - Only allowed origins (not wildcard)
+- ✅ **Admin password via env var** - No hardcoded credentials
+- ✅ **Content-Security-Policy** - Added CSP header in nginx
+- ✅ **Error handling** - No stack traces leaked to users
+- ✅ **Input sanitization** - HTML injection prevention on all user inputs
+- ✅ **Security headers** - X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
 
 ### 6. **Docker Security**
 - ✅ **Non-root nginx** - App runs as nginx user
@@ -40,19 +52,12 @@
 
 ## ⚠️ Security Warnings
 
-### 1. **Change Default Passwords**
-**Current Issues:**
-- PostgreSQL password: `postgres` (weak!)
-- Admin panel password: `johnai` (exposed in code)
-
-**Fix:**
-```bash
-# In .env file
-POSTGRES_PASSWORD=<generate-strong-password>
-
-# In src/pages/Admin.tsx
-const ADMIN_PASSWORD = '<your-secure-password>';
-```
+### 1. **Credentials Managed via Environment Variables**
+**Status: FIXED**
+- PostgreSQL password: Now set via `POSTGRES_PASSWORD` env var
+- Admin panel password: Now set via `VITE_ADMIN_PASSWORD` env var
+- JWT secret: Now set via `JWT_SECRET` env var
+- All credentials documented in `.env.example`
 
 ### 2. **Database Exposed on Localhost**
 **Current:** Port 5432 exposed to host
@@ -69,14 +74,9 @@ ports:
 **Risk:** Medium (anyone on your network can access)
 **Recommendation:** Add authentication or remove port mapping in production
 
-### 4. **CORS Set to Allow All**
-**Current:** `origins: "*"` allows any domain
-**Risk:** Low with Zero Trust, but not ideal
-**Recommendation for production:**
-```yaml
-origins:
-  - "https://predictions.johnfoster.cloud"
-```
+### 4. **CORS Restricted to Specific Origin**
+**Status: FIXED**
+- CORS now restricted to `https://predictions.johnfoster.cloud`
 
 ## 🛡️ Additional Security Recommendations
 
@@ -198,9 +198,13 @@ DELETE FROM markets WHERE created_at > NOW() - INTERVAL '1 hour';
 ## 📝 Security Checklist
 
 Before deploying to production:
-- [ ] Change PostgreSQL password
-- [ ] Change admin panel password
-- [ ] Set CORS to specific domain
+- [x] Move credentials to environment variables
+- [x] Remove .env from git tracking
+- [x] Set CORS to specific domain
+- [x] Add Content-Security-Policy header
+- [x] Add input validation and sanitization
+- [x] Fix dependency vulnerabilities (react-router, glob, js-yaml, lodash)
+- [x] Improve error handling (no stack traces leaked)
 - [ ] Remove unnecessary port mappings
 - [ ] Enable PostgreSQL SSL
 - [ ] Set up automated backups

@@ -76,6 +76,11 @@ export default function SlotMachine() {
       return;
     }
 
+    if (betAmount > 10000) {
+      toast.error('Maximum bet is 10,000 JohnBucks');
+      return;
+    }
+
     if (betAmount > parseFloat(user.balance)) {
       toast.error('Insufficient balance');
       return;

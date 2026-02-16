@@ -12,7 +12,7 @@ services:
       - name: cors
         config:
           origins:
-            - "*"
+            - "https://predictions.johnfoster.cloud"
           methods:
             - GET
             - HEAD
@@ -40,3 +40,8 @@ services:
           credentials: false
           max_age: 3600
           preflight_continue: false
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - "X-Content-Type-Options:nosniff"

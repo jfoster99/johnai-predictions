@@ -15,12 +15,13 @@ export const OnboardingModal = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const sanitizedName = name.trim().replace(/[<>]/g, '');
+    if (!sanitizedName || sanitizedName.length < 1 || sanitizedName.length > 30) return;
     setSubmitting(true);
 
     const { data, error } = await supabase
       .from('users')
-      .insert({ display_name: name.trim() })
+      .insert({ display_name: sanitizedName })
       .select()
       .single();
 
