@@ -56,51 +56,17 @@ const MarketPage = () => {
       if (isNaN(numShares) || numShares <= 0) throw new Error('Invalid shares');
 
       const price = side === 'yes' ? market.yes_price : market.no_price;
-      const totalCost = numShares * price;
 
-      if (totalCost > user.balance) throw new Error('Insufficient JohnBucks');
-
-      // Deduct balance
-      const { error: balErr } = await supabase
-        .from('users')
-        .update({ balance: user.balance - totalCost })
-        .eq('id', user.id);
-      if (balErr) throw balErr;
-
-      // Record trade
-      const { error: tradeErr } = await supabase.from('trades').insert({
-        market_id: market.id,
-        user_id: user.id,
-        side,
-        direction: 'buy',
-        shares: numShares,
-        price,
-        total_cost: totalCost,
+      // Use secure trade execution function
+      const { data, error } = await supabase.rpc('execute_trade', {
+        p_user_id: user.id,
+        p_market_id: market.id,
+        p_side: side,
+        p_shares: numShares,
+        p_price: price
       });
-      if (tradeErr) throw tradeErr;
 
-      // Upsert position
-      const { data: existing } = await supabase
-        .from('positions')
-        .select('*')
-        .eq('market_id', market.id)
-        .eq('user_id', user.id)
-        .eq('side', side)
-        .maybeSingle();
-
-      if (existing) {
-        const newShares = existing.shares + numShares;
-        const newAvg = ((existing.avg_price * existing.shares) + (price * numShares)) / newShares;
-        await supabase.from('positions').update({ shares: newShares, avg_price: newAvg }).eq('id', existing.id);
-      } else {
-        await supabase.from('positions').insert({
-          market_id: market.id,
-          user_id: user.id,
-          side,
-          shares: numShares,
-          avg_price: price,
-        });
-      }
+      if (error) throw error;
 
       // Update market price (simple AMM: price moves 1% per 10 shares)
       const priceShift = (numShares / 10) * 0.01;
@@ -110,7 +76,6 @@ const MarketPage = () => {
       await supabase.from('markets').update({
         yes_price: +newYes.toFixed(4),
         no_price: newNo,
-        total_volume: market.total_volume + totalCost,
         [`${side}_shares_outstanding`]: market[`${side}_shares_outstanding`] + numShares,
       }).eq('id', market.id);
     },

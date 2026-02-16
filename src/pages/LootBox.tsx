@@ -97,31 +97,26 @@ export default function LootBox() {
     setOpeningAnimation(true);
     setRevealedItem(null);
 
-    // Deduct box price
-    const { error: deductError } = await supabase
-      .from('users')
-      .update({ balance: parseFloat(user.balance) - BOX_PRICE })
-      .eq('id', user.id);
-
-    if (deductError) {
-      toast.error('Failed to open box');
-      setIsOpening(false);
-      setOpeningAnimation(false);
-      return;
-    }
-
     // Wait for opening animation
     setTimeout(async () => {
       const item = getRandomItem();
       setRevealedItem(item);
       setOpeningAnimation(false);
 
-      // Add item value to balance
-      const newBalance = parseFloat(user.balance) - BOX_PRICE + item.value;
-      await supabase
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('id', user.id);
+      // Use secure function to update balance
+      const netChange = item.value - BOX_PRICE;
+      const newBalance = parseFloat(user.balance) + netChange;
+      
+      const { error } = await supabase.rpc('update_user_balance', {
+        user_id_param: user.id,
+        new_balance: Math.max(0, newBalance)
+      });
+
+      if (error) {
+        toast.error('Failed to update balance');
+        setIsOpening(false);
+        return;
+      }
 
       await refreshUser();
       setIsOpening(false);

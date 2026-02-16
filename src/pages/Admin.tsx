@@ -111,10 +111,10 @@ export default function Admin() {
         const newBalance = parseFloat(userData.balance) + payout;
         console.log('New balance:', newBalance);
         
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({ balance: newBalance })
-          .eq('id', userId);
+        const { error: updateError } = await supabase.rpc('update_user_balance', {
+          user_id_param: userId,
+          new_balance: newBalance
+        });
 
         if (updateError) {
           console.error('Error updating balance:', updateError);
@@ -172,10 +172,11 @@ export default function Admin() {
     const user = users.find(u => u.id === selectedUser);
     if (!user) return;
 
-    const { error } = await supabase
-      .from('users')
-      .update({ balance: parseFloat(user.balance) + amount })
-      .eq('id', selectedUser);
+    const newBalance = parseFloat(user.balance) + amount;
+    const { error } = await supabase.rpc('update_user_balance', {
+      user_id_param: selectedUser,
+      new_balance: newBalance
+    });
 
     if (error) {
       toast.error('Failed to update balance');

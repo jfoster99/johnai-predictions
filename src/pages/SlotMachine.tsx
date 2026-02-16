@@ -84,18 +84,6 @@ export default function SlotMachine() {
     setIsSpinning(true);
     setLastWin(null);
 
-    // Deduct bet from balance
-    const { error: deductError } = await supabase
-      .from('users')
-      .update({ balance: parseFloat(user.balance) - betAmount })
-      .eq('id', user.id);
-
-    if (deductError) {
-      toast.error('Failed to place bet');
-      setIsSpinning(false);
-      return;
-    }
-
     // Animate spinning
     const spinDuration = 2000;
     const spinInterval = 100;
@@ -116,36 +104,38 @@ export default function SlotMachine() {
         const winnings = calculateWinnings(finalReels, betAmount);
         setLastWin(winnings);
         
-        if (winnings > 0) {
-          // Add winnings to balance
-          supabase
-            .from('users')
-            .update({ balance: parseFloat(user.balance) - betAmount + winnings })
-            .eq('id', user.id)
-            .then(() => {
-              refreshUser();
-              const profit = winnings - betAmount;
-              if (profit > 0) {
-                toast.success(`🎉 You won $${winnings.toFixed(2)}! (Profit: $${profit.toFixed(2)})`);
-              } else {
-                toast.info(`You won $${winnings.toFixed(2)} back!`);
-              }
-            });
+        // Use secure function to handle balance updates
+        const netChange = winnings - betAmount;
+        const newBalance = parseFloat(user.balance) + netChange;
+        
+        supabase.rpc('update_user_balance', {
+          user_id_param: user.id,
+          new_balance: Math.max(0, newBalance)
+        }).then(({ error }) => {
+          if (error) {
+            toast.error('Failed to update balance');
+            return;
+          }
+          
+          refreshUser();
+          
+          if (winnings > 0) {
+            const profit = winnings - betAmount;
+            if (profit > 0) {
+              toast.success(`🎉 You won $${winnings.toFixed(2)}! (Profit: $${profit.toFixed(2)})`);
+            } else {
+              toast.info(`You won $${winnings.toFixed(2)} back!`);
+            }
+          } else {
+            toast.error(`No match. You lost $${betAmount.toFixed(2)}`);
+          }
           
           setStats(prev => ({
             totalSpins: prev.totalSpins + 1,
             totalWon: prev.totalWon + winnings,
             totalBet: prev.totalBet + betAmount,
           }));
-        } else {
-          refreshUser();
-          toast.error(`No match. You lost $${betAmount.toFixed(2)}`);
-          setStats(prev => ({
-            totalSpins: prev.totalSpins + 1,
-            totalWon: prev.totalWon,
-            totalBet: prev.totalBet + betAmount,
-          }));
-        }
+        });
         
         setIsSpinning(false);
       }
