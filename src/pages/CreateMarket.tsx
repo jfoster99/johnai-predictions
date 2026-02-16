@@ -24,26 +24,37 @@ const CreateMarket = () => {
   const [resolutionCriteria, setResolutionCriteria] = useState('');
   const [preview, setPreview] = useState(false);
 
+  const sanitizeInput = (input: string): string => {
+    return input.trim().replace(/[<>"'&]/g, '');
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Please set up your account first');
       if (!question.trim()) throw new Error('Question is required');
       if (!resolutionDate) throw new Error('Resolution date is required');
 
+      const sanitizedQuestion = sanitizeInput(question);
+      const sanitizedDescription = sanitizeInput(description);
+      const sanitizedCriteria = sanitizeInput(resolutionCriteria);
+
+      if (sanitizedQuestion.length > 200) throw new Error('Question is too long');
+      if (sanitizedDescription.length > 2000) throw new Error('Description is too long');
+
       const { data, error } = await supabase
         .from('markets')
         .insert({
           creator_id: user.id,
-          question: question.trim(),
-          description: description.trim() || null,
+          question: sanitizedQuestion,
+          description: sanitizedDescription || null,
           category,
           resolution_date: new Date(resolutionDate).toISOString(),
-          resolution_criteria: resolutionCriteria.trim() || null,
+          resolution_criteria: sanitizedCriteria || null,
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw new Error('Failed to create market. Please try again.');
       return data;
     },
     onSuccess: (data) => {

@@ -14,21 +14,26 @@ export const OnboardingModal = () => {
 
   if (loading || user) return null;
 
+  const sanitizeDisplayName = (input: string): string => {
+    return input.trim().replace(/[<>"'&]/g, '').slice(0, 30);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const sanitizedName = sanitizeDisplayName(name);
+    if (!sanitizedName) return;
     setSubmitting(true);
 
     try {
       const { data, error } = await supabase
         .from('users')
-        .insert({ display_name: name.trim() })
+        .insert({ display_name: sanitizedName })
         .select()
         .single();
 
       if (error) {
         console.error('User creation error:', error);
-        toast.error(`Failed to create account: ${error.message}`);
+        toast.error('Failed to create account. Please try again.');
         setSubmitting(false);
         return;
       }
