@@ -34,7 +34,15 @@ jobs:
             echo "🔄 Pulling latest changes..."
             git pull origin main
             
-            echo "🐋 Rebuilding and restarting containers..."
+            echo "�️ Applying database migrations..."
+            for migration in supabase/migrations/*.sql; do
+              if [ -f "$migration" ]; then
+                echo "Applying $(basename $migration)..."
+                docker exec -i johnai-postgres psql -U postgres -d postgres < "$migration" || echo "Migration $(basename $migration) failed or already applied"
+              fi
+            done
+            
+            echo "�🐋 Rebuilding and restarting containers..."
             docker compose --profile tunnel down
             docker compose --profile tunnel up -d --build
             
