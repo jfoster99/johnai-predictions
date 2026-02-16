@@ -15,11 +15,16 @@ export default function ClaimAdmin() {
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const handleClaimAdmin = async () => {
+    console.log('=== handleClaimAdmin called ===');
+    console.log('authUser:', authUser);
+    
     if (!authUser) {
+      console.log('No authUser - showing error');
       toast.error('You must be logged in to claim admin status');
       return;
     }
 
+    console.log('Setting loading to true');
     setLoading(true);
     setResult(null);
 
