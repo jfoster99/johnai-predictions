@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
+import { sanitizeInput } from '@/lib/utils';
 import { DollarSign } from 'lucide-react';
 
 export const OnboardingModal = () => {
@@ -15,7 +16,7 @@ export const OnboardingModal = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const sanitizedName = name.trim().replace(/[<>]/g, '');
+    const sanitizedName = sanitizeInput(name.trim());
     if (!sanitizedName || sanitizedName.length < 1 || sanitizedName.length > 30) return;
     setSubmitting(true);
 

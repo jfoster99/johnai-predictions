@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
+import { sanitizeInput } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,17 +32,15 @@ const CreateMarket = () => {
       if (question.trim().length > 200) throw new Error('Question is too long');
       if (!resolutionDate) throw new Error('Resolution date is required');
 
-      const sanitize = (str: string) => str.replace(/[<>]/g, '');
-
       const { data, error } = await supabase
         .from('markets')
         .insert({
           creator_id: user.id,
-          question: sanitize(question.trim()),
-          description: description.trim() ? sanitize(description.trim()) : null,
+          question: sanitizeInput(question.trim()),
+          description: description.trim() ? sanitizeInput(description.trim()) : null,
           category,
           resolution_date: new Date(resolutionDate).toISOString(),
-          resolution_criteria: resolutionCriteria.trim() ? sanitize(resolutionCriteria.trim()) : null,
+          resolution_criteria: resolutionCriteria.trim() ? sanitizeInput(resolutionCriteria.trim()) : null,
         })
         .select()
         .single();

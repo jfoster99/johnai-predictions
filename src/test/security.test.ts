@@ -1,21 +1,20 @@
 import { describe, it, expect } from "vitest";
+import { sanitizeInput } from "@/lib/utils";
 
 describe("security", () => {
   describe("input sanitization", () => {
-    const sanitize = (str: string) => str.replace(/[<>]/g, '');
-
     it("should strip HTML angle brackets from input", () => {
-      expect(sanitize('<script>alert("xss")</script>')).toBe('scriptalert("xss")/script');
-      expect(sanitize('Hello <b>World</b>')).toBe('Hello bWorld/b');
+      expect(sanitizeInput('<script>alert("xss")</script>')).toBe('scriptalert("xss")/script');
+      expect(sanitizeInput('Hello <b>World</b>')).toBe('Hello bWorld/b');
     });
 
     it("should preserve safe input", () => {
-      expect(sanitize('Normal text 123')).toBe('Normal text 123');
-      expect(sanitize('Question with $pecial ch@rs!')).toBe('Question with $pecial ch@rs!');
+      expect(sanitizeInput('Normal text 123')).toBe('Normal text 123');
+      expect(sanitizeInput('Question with $pecial ch@rs!')).toBe('Question with $pecial ch@rs!');
     });
 
     it("should handle empty string", () => {
-      expect(sanitize('')).toBe('');
+      expect(sanitizeInput('')).toBe('');
     });
   });
 
