@@ -171,7 +171,7 @@ export default function LoanShark() {
           <div className="flex items-center gap-4 p-4 bg-gray-900 rounded-lg border border-red-500/30">
             <div className="text-6xl">🤵</div>
             <div className="flex-1 text-sm space-y-1">
-              <p className="font-semibold text-white">Charlie "The Calculator"</p>
+              <p className="font-semibold text-white">Charlie</p>
               <p className="text-gray-400 italic">
                 "Listen kid, I like you. {INTEREST_RATE * 100}% is a <span className="line-through">steal</span> great rate. 
                 My boys will make sure you remember to pay on time... capisce?"
