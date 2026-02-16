@@ -20,6 +20,9 @@ jobs:
           APP_CONTAINER_IP: ${{ secrets.APP_CONTAINER_IP }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          VITE_ADMIN_PASSWORD: ${{ secrets.VITE_ADMIN_PASSWORD }}
         run: |
           # Setup SSH key
           mkdir -p ~/.ssh
@@ -34,7 +37,21 @@ jobs:
             echo "🔄 Pulling latest changes..."
             git pull origin main
             
-            echo "�️ Applying database migrations..."
+            echo "🔐 Creating .env file from secrets..."
+            cat > .env << 'EOF'
+          VITE_SUPABASE_PROJECT_ID="local"
+          VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+          VITE_SUPABASE_URL="https://predictions.johnfoster.cloud/api"
+          POSTGRES_HOST="localhost"
+          POSTGRES_PORT="5432"
+          POSTGRES_DB="postgres"
+          POSTGRES_USER="postgres"
+          POSTGRES_PASSWORD="${POSTGRES_PASSWORD}"
+          CLOUDFLARE_TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+          VITE_ADMIN_PASSWORD="${VITE_ADMIN_PASSWORD}"
+          EOF
+            
+            echo "🗄️ Applying database migrations..."
             for migration in supabase/migrations/*.sql; do
               if [ -f "$migration" ]; then
                 echo "Applying $(basename $migration)..."
@@ -42,7 +59,7 @@ jobs:
               fi
             done
             
-            echo "�🐋 Rebuilding and restarting containers..."
+            echo "🐋 Rebuilding and restarting containers..."
             docker compose --profile tunnel down
             docker compose --profile tunnel up -d --build
             
