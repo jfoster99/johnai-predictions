@@ -159,11 +159,11 @@ export default function LoanShark() {
         <CardHeader className="text-center bg-gradient-to-br from-gray-900 to-black text-white rounded-t-lg">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Skull className="h-6 w-6" />
-            <CardTitle className="text-3xl font-display">Tony's Loan Office</CardTitle>
+            <CardTitle className="text-3xl font-display">Charlie's Loan Office</CardTitle>
             <Skull className="h-6 w-6" />
           </div>
           <CardDescription className="text-gray-300 text-base">
-            "We ain't the bank, but we're very interested in your well-being." - Tony
+            "We ain't the bank, but we're very interested in your well-being." - Charlie
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-6">
@@ -171,7 +171,7 @@ export default function LoanShark() {
           <div className="flex items-center gap-4 p-4 bg-gray-900 rounded-lg border border-red-500/30">
             <div className="text-6xl">🤵</div>
             <div className="flex-1 text-sm space-y-1">
-              <p className="font-semibold text-white">Tony "The Calculator" Soprano</p>
+              <p className="font-semibold text-white">Charlie</p>
               <p className="text-gray-400 italic">
                 "Listen kid, I like you. {INTEREST_RATE * 100}% is a <span className="line-through">steal</span> great rate. 
                 My boys will make sure you remember to pay on time... capisce?"
@@ -277,7 +277,7 @@ export default function LoanShark() {
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Interest rate: {INTEREST_RATE * 100}% (non-negotiable)</li>
               <li>No grace period, no excuses</li>
-              <li>Late payments may result in "visits" from Tony's associates</li>
+              <li>Late payments may result in "visits" from Charlie's associates</li>
               <li>We know where you live (in the blockchain)</li>
               <li>Gambling your loan money? That's what we like to see!</li>
             </ul>
@@ -285,7 +285,7 @@ export default function LoanShark() {
 
           {/* Mob Quotes */}
           <div className="text-center text-sm italic text-muted-foreground p-4 bg-muted/50 rounded">
-            💀 "A loan from Tony is like a boomerang - it always comes back... with interest." 💀
+            💀 "A loan from Charlie is like a boomerang - it always comes back... with interest." 💀
           </div>
         </CardContent>
       </Card>
