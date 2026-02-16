@@ -12,7 +12,12 @@ services:
       - name: cors
         config:
           origins:
-            - "*"
+            # SECURITY: Restrict to your actual domain in production
+            # Replace with your Cloudflare domain or custom domain
+            - "http://localhost:3000"
+            - "http://127.0.0.1:3000"
+            # Add your production domain here:
+            # - "https://yourdomain.com"
           methods:
             - GET
             - HEAD
@@ -40,3 +45,19 @@ services:
           credentials: false
           max_age: 3600
           preflight_continue: false
+      
+      # Rate limiting to prevent abuse
+      - name: rate-limiting
+        config:
+          minute: 60
+          hour: 1000
+          policy: local
+          fault_tolerant: true
+          hide_client_headers: false
+          
+      # Request size limiting to prevent DoS
+      - name: request-size-limiting
+        config:
+          allowed_payload_size: 1
+          size_unit: megabytes
+          require_content_length: false
