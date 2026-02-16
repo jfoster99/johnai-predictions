@@ -82,7 +82,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setAuthUser(session.user);
         
         // Load user profile with retry logic for new users
-        let retries = 5;
+        let retries = 3;
         let profile = null;
         
         while (retries > 0 && !profile) {
@@ -100,7 +100,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
           
           // Wait before retrying (profile might still be creating)
           if (retries > 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
           retries--;
         }

@@ -72,7 +72,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
       if (data?.user) {
         // Wait a moment for the trigger to create the user profile
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Verify profile was created
         let retries = 3;
@@ -87,7 +87,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
             break;
           }
           
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 100));
           retries--;
         }
         

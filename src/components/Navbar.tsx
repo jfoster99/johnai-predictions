@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { AuthModal } from './AuthModal';
 
 export const Navbar = () => {
-  const { user, signOut } = useUser();
+  const { user, authUser, signOut } = useUser();
   const location = useLocation();
   const [showAuth, setShowAuth] = useState(false);
 
@@ -46,14 +46,18 @@ export const Navbar = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            {user ? (
+            {authUser ? (
               <>
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{user.display_name}</span>
-                  <span className="font-display font-bold text-primary">
-                    ${user.balance.toLocaleString()}
+                  <span className="text-muted-foreground">
+                    {user?.display_name || authUser.user_metadata?.display_name || authUser.email?.split('@')[0] || 'User'}
                   </span>
+                  {user && (
+                    <span className="font-display font-bold text-primary">
+                      ${user.balance.toLocaleString()}
+                    </span>
+                  )}
                 </div>
                 <Button variant="outline" size="sm" onClick={signOut} className="gap-1.5">
                   <LogOut className="h-4 w-4" />
