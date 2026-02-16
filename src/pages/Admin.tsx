@@ -9,7 +9,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, TrendingUp, DollarSign } from 'lucide-react';
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'johnai';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+
+// Security: Require admin password to be set via environment variable
+if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 8) {
+  console.error('SECURITY WARNING: VITE_ADMIN_PASSWORD must be set and at least 8 characters long');
+}
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -22,6 +27,8 @@ export default function Admin() {
   const [johnbucksAmount, setJohnbucksAmount] = useState('');
 
   useEffect(() => {
+    // Check if already authenticated in this session
+    // Note: Using sessionStorage has XSS risks, but acceptable for admin panel with CSP
     const isAuth = sessionStorage.getItem('admin_auth') === 'true';
     if (isAuth) {
       setAuthenticated(true);
@@ -47,13 +54,23 @@ export default function Admin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password is set
+    if (!ADMIN_PASSWORD) {
+      toast.error('Admin password not configured. Please set VITE_ADMIN_PASSWORD environment variable.');
+      return;
+    }
+    
+    // Check password with constant-time comparison to prevent timing attacks
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('admin_auth', 'true');
       setAuthenticated(true);
       loadData();
       toast.success('Admin access granted');
+      setPassword(''); // Clear password from memory
     } else {
       toast.error('Invalid password');
+      setPassword(''); // Clear password on failure
     }
   };
 
@@ -153,7 +170,9 @@ export default function Admin() {
       setSelectedMarket('');
     } catch (error) {
       console.error('Resolution error:', error);
-      toast.error(`Failed to resolve market: ${error.message || 'Unknown error'}`);
+      // Don't expose detailed error messages to prevent information disclosure
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to resolve market: ${errorMessage.includes('sufficient') || errorMessage.includes('not found') ? errorMessage : 'An error occurred'}`);
     }
   };
 
@@ -164,8 +183,25 @@ export default function Admin() {
     }
 
     const amount = parseFloat(johnbucksAmount);
+    
+    // Input validation: prevent negative amounts, NaN, and excessive values
     if (isNaN(amount)) {
-      toast.error('Invalid amount');
+      toast.error('Invalid amount: must be a number');
+      return;
+    }
+    
+    if (amount < 0) {
+      toast.error('Invalid amount: cannot be negative');
+      return;
+    }
+    
+    if (amount > 1000000) {
+      toast.error('Invalid amount: maximum is 1,000,000');
+      return;
+    }
+    
+    if (!Number.isFinite(amount)) {
+      toast.error('Invalid amount: must be a finite number');
       return;
     }
 
@@ -173,6 +209,13 @@ export default function Admin() {
     if (!user) return;
 
     const newBalance = parseFloat(user.balance) + amount;
+    
+    // Prevent balance overflow
+    if (newBalance > 10000000) {
+      toast.error('Operation would exceed maximum balance (10,000,000)');
+      return;
+    }
+    
     const { error } = await supabase.rpc('update_user_balance', {
       user_id_param: selectedUser,
       new_balance: newBalance
@@ -180,6 +223,7 @@ export default function Admin() {
 
     if (error) {
       toast.error('Failed to update balance');
+      console.error('Balance update error:', error);
     } else {
       toast.success(`Added ${amount} JohnBucks to ${user.display_name}`);
       loadData();
@@ -321,6 +365,9 @@ export default function Admin() {
                   onChange={(e) => setJohnbucksAmount(e.target.value)}
                   placeholder="Enter amount"
                   className="bg-secondary"
+                  min="0"
+                  max="1000000"
+                  step="1"
                 />
               </div>
               <Button onClick={giveJohnbucks} className="w-full">

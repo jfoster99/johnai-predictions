@@ -52,10 +52,28 @@ const MarketPage = () => {
   const buyMutation = useMutation({
     mutationFn: async () => {
       if (!user || !market) throw new Error('Not ready');
+      
       const numShares = parseInt(shares);
-      if (isNaN(numShares) || numShares <= 0) throw new Error('Invalid shares');
+      
+      // Input validation
+      if (isNaN(numShares)) {
+        throw new Error('Invalid shares: must be a number');
+      }
+      
+      if (numShares <= 0) {
+        throw new Error('Invalid shares: must be positive');
+      }
+      
+      if (numShares > 1000000) {
+        throw new Error('Invalid shares: maximum is 1,000,000');
+      }
 
       const price = side === 'yes' ? market.yes_price : market.no_price;
+      
+      // Validate price is within bounds
+      if (price < 0 || price > 1) {
+        throw new Error('Invalid market price');
+      }
 
       // Use secure trade execution function
       const { data, error } = await supabase.rpc('execute_trade', {
@@ -84,6 +102,7 @@ const MarketPage = () => {
       queryClient.invalidateQueries({ queryKey: ['market', id] });
       queryClient.invalidateQueries({ queryKey: ['trades', id] });
       refreshUser();
+      setShares('10'); // Reset to default
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -264,6 +283,8 @@ const MarketPage = () => {
                     <Input
                       type="number"
                       min="1"
+                      max="10000"
+                      step="1"
                       value={shares}
                       onChange={(e) => setShares(e.target.value)}
                       className="bg-secondary border-border"
