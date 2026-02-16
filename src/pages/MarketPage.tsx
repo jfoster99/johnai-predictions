@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Clock, BarChart3, User, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import { validateShares, validatePrice, validateBalance, validateCostCalculation } from '@/utils/validation';
 
 const MarketPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,11 +53,33 @@ const MarketPage = () => {
   const buyMutation = useMutation({
     mutationFn: async () => {
       if (!user || !market) throw new Error('Not ready');
-      const numShares = parseInt(shares);
-      if (isNaN(numShares) || numShares <= 0) throw new Error('Invalid shares');
+      
+      // Validate shares input
+      const numShares = parseFloat(shares);
+      const sharesValidation = validateShares(numShares);
+      if (!sharesValidation.isValid) {
+        throw new Error(sharesValidation.error);
+      }
 
+      // Validate price
       const price = side === 'yes' ? market.yes_price : market.no_price;
+      const priceValidation = validatePrice(price);
+      if (!priceValidation.isValid) {
+        throw new Error(priceValidation.error);
+      }
+
+      // Calculate and validate cost
       const totalCost = numShares * price;
+      const costValidation = validateCostCalculation(numShares, price, totalCost);
+      if (!costValidation.isValid) {
+        throw new Error(costValidation.error);
+      }
+
+      // Validate user balance
+      const balanceValidation = validateBalance(user.balance);
+      if (!balanceValidation.isValid) {
+        throw new Error(balanceValidation.error);
+      }
 
       if (totalCost > user.balance) throw new Error('Insufficient JohnBucks');
 

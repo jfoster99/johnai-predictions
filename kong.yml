@@ -11,8 +11,11 @@ services:
     plugins:
       - name: cors
         config:
+          # Restrict CORS to specific origins (update with your domain)
           origins:
-            - "*"
+            - "http://localhost:5173"
+            - "http://localhost:3000"
+            - "https://predictions.johnfoster.cloud"
           methods:
             - GET
             - HEAD
@@ -37,6 +40,6 @@ services:
             - Content-Length
             - Content-Type
             - Content-Profile
-          credentials: false
+          credentials: true
           max_age: 3600
           preflight_continue: false

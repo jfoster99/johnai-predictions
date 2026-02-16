@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, TrendingUp, DollarSign } from 'lucide-react';
+import { validateBalance } from '@/utils/validation';
 
-const ADMIN_PASSWORD = 'johnai';
+// Admin password from environment variable
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -169,16 +171,37 @@ export default function Admin() {
       return;
     }
 
+    // Validate amount is reasonable
+    if (amount < 0) {
+      toast.error('Amount cannot be negative');
+      return;
+    }
+
+    if (amount > 1000000) {
+      toast.error('Amount too large (max 1,000,000)');
+      return;
+    }
+
     const user = users.find(u => u.id === selectedUser);
     if (!user) return;
 
+    const newBalance = parseFloat(user.balance) + amount;
+    
+    // Validate the new balance
+    const balanceValidation = validateBalance(newBalance);
+    if (!balanceValidation.isValid) {
+      toast.error(balanceValidation.error);
+      return;
+    }
+
     const { error } = await supabase
       .from('users')
-      .update({ balance: parseFloat(user.balance) + amount })
+      .update({ balance: newBalance })
       .eq('id', selectedUser);
 
     if (error) {
       toast.error('Failed to update balance');
+      console.error('Balance update error:', error);
     } else {
       toast.success(`Added ${amount} JohnBucks to ${user.display_name}`);
       loadData();

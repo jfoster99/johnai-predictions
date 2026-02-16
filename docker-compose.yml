@@ -6,10 +6,11 @@ services:
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    # Remove port exposure for security - only accessible within Docker network
+    # ports:
+    #   - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./supabase/migrations:/docker-entrypoint-initdb.d
@@ -29,11 +30,13 @@ services:
           memory: 128M
 
   # Supabase Studio (Database Management UI)
+  # WARNING: Only expose in development. Remove in production!
   studio:
     image: supabase/studio:latest
     container_name: johnai-studio
-    ports:
-      - "3001:3000"
+    # Removed port exposure for security - use port forwarding if needed
+    # ports:
+    #   - "3001:3000"
     environment:
       SUPABASE_URL: http://kong:8000
       STUDIO_PG_META_URL: http://meta:8080
@@ -49,10 +52,10 @@ services:
     image: postgrest/postgrest:v12.0.1
     container_name: johnai-rest
     environment:
-      PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/postgres
+      PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres
       PGRST_DB_SCHEMAS: public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: super-secret-jwt-token-with-at-least-32-characters-long
+      PGRST_JWT_SECRET: ${PGRST_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:8000
     networks:
       - johnai-network
@@ -104,7 +107,7 @@ services:
       PG_META_DB_PORT: 5432
       PG_META_DB_NAME: postgres
       PG_META_DB_USER: postgres
-      PG_META_DB_PASSWORD: postgres
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     networks:
       - johnai-network
     depends_on:
