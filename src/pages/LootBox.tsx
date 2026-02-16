@@ -101,9 +101,8 @@ export default function LootBox() {
     setTimeout(async () => {
       // SECURITY FIX: Call secure server-side function instead of client-side selection
       // The server generates the random item to prevent manipulation
-      const { data, error } = await supabase.rpc('open_loot_box', {
-        p_user_id: user.id
-      });
+      // User ID is derived from auth token on server-side for security
+      const { data, error } = await supabase.rpc('open_loot_box');
 
       if (error) {
         toast.error(error.message || 'Failed to open loot box');
