@@ -23,8 +23,13 @@ export default function Admin() {
   const [selectedMarket, setSelectedMarket] = useState('');
   const [selectedUser, setSelectedUser] = useState('');
   const [johnbucksAmount, setJohnbucksAmount] = useState('');
-  const [loginAttempts, setLoginAttempts] = useState(0);
-  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [loginAttempts, setLoginAttempts] = useState(() => {
+    return parseInt(sessionStorage.getItem('admin_login_attempts') || '0', 10);
+  });
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => {
+    const stored = sessionStorage.getItem('admin_lockout_until');
+    return stored ? parseInt(stored, 10) : null;
+  });
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem('admin_auth') === 'true';
@@ -66,6 +71,8 @@ export default function Admin() {
 
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('admin_auth', 'true');
+      sessionStorage.removeItem('admin_login_attempts');
+      sessionStorage.removeItem('admin_lockout_until');
       setAuthenticated(true);
       setLoginAttempts(0);
       setLockoutUntil(null);
@@ -74,8 +81,11 @@ export default function Admin() {
     } else {
       const attempts = loginAttempts + 1;
       setLoginAttempts(attempts);
+      sessionStorage.setItem('admin_login_attempts', String(attempts));
       if (attempts >= MAX_LOGIN_ATTEMPTS) {
-        setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS);
+        const lockout = Date.now() + LOCKOUT_DURATION_MS;
+        setLockoutUntil(lockout);
+        sessionStorage.setItem('admin_lockout_until', String(lockout));
         toast.error('Too many failed attempts. Locked out for 5 minutes.');
       } else {
         toast.error('Invalid password');

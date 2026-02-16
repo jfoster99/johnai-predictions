@@ -15,7 +15,7 @@ export const OnboardingModal = () => {
   if (loading || user) return null;
 
   const sanitizeDisplayName = (input: string): string => {
-    return input.trim().replace(/[<>"'&]/g, '');
+    return input.trim().replace(/[<>"'&]/g, '').slice(0, 30);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
