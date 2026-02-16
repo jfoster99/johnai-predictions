@@ -5,7 +5,7 @@
 -- FIX: Secure execute_trade - Remove user_id parameter
 -- ============================================================================
 
-DROP FUNCTION IF EXISTS public.execute_trade(UUID, UUID, TEXT, NUMERIC, NUMERIC);
+DROP FUNCTION IF EXISTS public.execute_trade(UUID, UUID, TEXT, NUMERIC, NUMERIC) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.execute_trade(
   p_market_id UUID,
@@ -118,7 +118,7 @@ COMMENT ON FUNCTION public.execute_trade IS
 -- FIX: Secure resolve_market - Remove resolver_id parameter
 -- ============================================================================
 
-DROP FUNCTION IF EXISTS public.resolve_market(UUID, TEXT, UUID);
+DROP FUNCTION IF EXISTS public.resolve_market(UUID, TEXT, UUID) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.resolve_market(
   p_market_id UUID,

@@ -8,7 +8,7 @@
 -- FIX #1: Secure open_loot_box - Remove user_id parameter
 -- ============================================================================
 
-DROP FUNCTION IF EXISTS public.open_loot_box(UUID);
+DROP FUNCTION IF EXISTS public.open_loot_box(UUID) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.open_loot_box()
 RETURNS TABLE (
@@ -167,7 +167,7 @@ COMMENT ON FUNCTION public.open_loot_box IS
 -- FIX #2: Secure play_slots - Remove user_id parameter
 -- ============================================================================
 
-DROP FUNCTION IF EXISTS public.play_slots(UUID, NUMERIC);
+DROP FUNCTION IF EXISTS public.play_slots(UUID, NUMERIC) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.play_slots(p_bet_amount NUMERIC)
 RETURNS TABLE (
