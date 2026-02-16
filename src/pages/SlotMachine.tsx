@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { Coins, TrendingUp, Sparkles } from 'lucide-react';
+import { safeParseFloat, gamblingInputSchema } from '@/lib/validation';
 
 const SYMBOLS = ['🍒', '💎', '⭐', '🎰', '🎁'];
 
@@ -70,13 +71,18 @@ export default function SlotMachine() {
       return;
     }
 
-    const betAmount = parseFloat(bet);
-    if (isNaN(betAmount) || betAmount <= 0) {
-      toast.error('Please enter a valid bet amount');
+    const betAmount = safeParseFloat(bet, 0);
+    
+    // Validate bet input
+    const validationResult = gamblingInputSchema.safeParse({ bet: betAmount });
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors[0]?.message || 'Invalid bet amount';
+      toast.error(errorMessage);
       return;
     }
 
-    if (betAmount > parseFloat(user.balance)) {
+    const userBalance = safeParseFloat(user.balance, 0);
+    if (betAmount > userBalance) {
       toast.error('Insufficient balance');
       return;
     }
@@ -87,7 +93,7 @@ export default function SlotMachine() {
     // Deduct bet from balance
     const { error: deductError } = await supabase
       .from('users')
-      .update({ balance: parseFloat(user.balance) - betAmount })
+      .update({ balance: userBalance - betAmount })
       .eq('id', user.id);
 
     if (deductError) {
@@ -120,7 +126,7 @@ export default function SlotMachine() {
           // Add winnings to balance
           supabase
             .from('users')
-            .update({ balance: parseFloat(user.balance) - betAmount + winnings })
+            .update({ balance: userBalance - betAmount + winnings })
             .eq('id', user.id)
             .then(() => {
               refreshUser();
@@ -218,7 +224,7 @@ export default function SlotMachine() {
                       variant="outline"
                       size="sm"
                       onClick={() => quickBet(amount)}
-                      disabled={isSpinning || (user && parseFloat(user.balance) < amount)}
+                      disabled={isSpinning || (user && safeParseFloat(user.balance, 0) < amount)}
                       className="flex-1"
                     >
                       ${amount}
@@ -250,7 +256,7 @@ export default function SlotMachine() {
               {lastWin !== null && (
                 <div
                   className={`text-center p-4 rounded-lg font-bold text-lg ${
-                    lastWin > parseFloat(bet)
+                    lastWin > safeParseFloat(bet, 0)
                       ? 'bg-green-500/20 text-green-400'
                       : lastWin > 0
                       ? 'bg-yellow-500/20 text-yellow-400'
@@ -363,7 +369,7 @@ export default function SlotMachine() {
                   <div className="text-center">
                     <p className="text-sm text-muted-foreground mb-1">Your Balance</p>
                     <p className="text-3xl font-bold font-display">
-                      ${parseFloat(user.balance).toFixed(2)}
+                      ${safeParseFloat(user.balance, 0).toFixed(2)}
                     </p>
                   </div>
                 </CardContent>

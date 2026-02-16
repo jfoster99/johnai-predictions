@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Clock, BarChart3, User, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import { safeParseInt, tradeSchema } from '@/lib/validation';
 
 const MarketPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,10 +53,23 @@ const MarketPage = () => {
   const buyMutation = useMutation({
     mutationFn: async () => {
       if (!user || !market) throw new Error('Not ready');
-      const numShares = parseInt(shares);
-      if (isNaN(numShares) || numShares <= 0) throw new Error('Invalid shares');
-
+      
+      const numShares = safeParseInt(shares, 0);
       const price = side === 'yes' ? market.yes_price : market.no_price;
+
+      // Validate trade with Zod schema
+      const validationResult = tradeSchema.safeParse({
+        market_id: market.id,
+        side: side,
+        shares: numShares,
+        price: price,
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid trade';
+        throw new Error(errorMessage);
+      }
+
       const totalCost = numShares * price;
 
       if (totalCost > user.balance) throw new Error('Insufficient JohnBucks');
@@ -144,7 +158,7 @@ const MarketPage = () => {
   const yesPercent = Math.round(market.yes_price * 100);
   const noPercent = Math.round(market.no_price * 100);
   const price = side === 'yes' ? market.yes_price : market.no_price;
-  const numShares = parseInt(shares) || 0;
+  const numShares = safeParseInt(shares, 0);
   const totalCost = numShares * price;
 
   return (
