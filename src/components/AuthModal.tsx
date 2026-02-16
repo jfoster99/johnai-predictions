@@ -35,9 +35,10 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
       setEmail('');
       setPassword('');
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to login');
+      const message = error instanceof Error ? error.message : 'Failed to login';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -80,9 +81,10 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
       setPassword('');
       setUsername('');
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Signup error:', error);
-      toast.error(error.message || 'Failed to create account');
+      const message = error instanceof Error ? error.message : 'Failed to create account';
+      toast.error(message);
     } finally {
       setLoading(false);
     }

@@ -12,7 +12,7 @@ JohnAI Predictions is a Polymarket/Kalshi-style prediction market application bu
 
 ## Features
 
-- **Anonymous Trading**: Create an account with just a username, get 10,000 JohnBucks to start
+- **User Authentication**: Create an account with email and password, get 10,000 JohnBucks to start
 - **Prediction Markets**: Browse and trade on YES/NO markets for future events
 - **Market Creation**: Anyone can create new prediction markets
 - **Portfolio Tracking**: View your positions, trades, and profit/loss
@@ -32,9 +32,9 @@ JohnAI Predictions is a Polymarket/Kalshi-style prediction market application bu
 ## Key Concepts
 
 ### Users
-- Simple username-based accounts
+- Email and password based accounts
 - Start with 10,000 JohnBucks
-- No passwords required (local development mode)
+- Secure authentication via Supabase Auth
 
 ### Markets
 - Binary YES/NO prediction markets
