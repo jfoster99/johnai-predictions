@@ -14,18 +14,5 @@ CREATE TABLE IF NOT EXISTS loans (
 CREATE INDEX IF NOT EXISTS idx_loans_user_id ON loans(user_id);
 CREATE INDEX IF NOT EXISTS idx_loans_status ON loans(status);
 
--- Enable RLS
-ALTER TABLE loans ENABLE ROW LEVEL SECURITY;
-
--- Create policies
-CREATE POLICY "Users can view their own loans"
-  ON loans FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create their own loans"
-  ON loans FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own loans"
-  ON loans FOR UPDATE
-  USING (auth.uid() = user_id);
+-- Disable RLS since we're using a custom auth system
+ALTER TABLE loans DISABLE ROW LEVEL SECURITY;
