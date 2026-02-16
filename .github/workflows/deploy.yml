@@ -55,8 +55,7 @@ jobs:
             git pull origin main
             
             echo "Moving .env file into place..."
-            sudo mv /tmp/.env .env
-            sudo chown predictions:predictions .env
+            mv /tmp/.env .env
             chmod 600 .env
             
             echo "Applying database migrations..."
