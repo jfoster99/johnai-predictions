@@ -97,47 +97,55 @@ export default function SlotMachine() {
       if (currentSpin >= spinCount) {
         clearInterval(spinAnimation);
         
-        // Final result
-        const finalReels = [getWeightedSymbol(), getWeightedSymbol(), getWeightedSymbol()];
-        setReels(finalReels);
-        
-        const winnings = calculateWinnings(finalReels, betAmount);
-        setLastWin(winnings);
-        
-        // Use secure function to handle balance updates
-        const netChange = winnings - betAmount;
-        const newBalance = parseFloat(user.balance) + netChange;
-        
-        supabase.rpc('update_user_balance', {
-          user_id_param: user.id,
-          new_balance: Math.max(0, newBalance)
-        }).then(({ error }) => {
+        // SECURITY FIX: Call secure server-side function instead of client-side calculation
+        // The server generates random symbols and calculates winnings to prevent manipulation
+        supabase.rpc('play_slots', {
+          p_user_id: user.id,
+          p_bet_amount: betAmount
+        }).then(({ data, error }) => {
           if (error) {
-            toast.error('Failed to update balance');
+            toast.error(error.message || 'Failed to play slots');
+            setIsSpinning(false);
             return;
           }
           
+          if (!data || data.length === 0) {
+            toast.error('Invalid response from server');
+            setIsSpinning(false);
+            return;
+          }
+
+          const result = data[0];
+          
+          // Display server-determined symbols
+          const finalReels = [result.symbol1, result.symbol2, result.symbol3];
+          setReels(finalReels);
+          setLastWin(result.payout);
+          
+          // Refresh user balance
           refreshUser();
           
-          if (winnings > 0) {
-            const profit = winnings - betAmount;
+          // Show appropriate toast message
+          if (result.won && result.payout > 0) {
+            const profit = result.payout - betAmount;
             if (profit > 0) {
-              toast.success(`🎉 You won $${winnings.toFixed(2)}! (Profit: $${profit.toFixed(2)})`);
+              toast.success(`🎉 You won $${result.payout.toFixed(2)}! (Profit: $${profit.toFixed(2)})`);
             } else {
-              toast.info(`You won $${winnings.toFixed(2)} back!`);
+              toast.info(`You won $${result.payout.toFixed(2)} back!`);
             }
           } else {
             toast.error(`No match. You lost $${betAmount.toFixed(2)}`);
           }
           
+          // Update stats
           setStats(prev => ({
             totalSpins: prev.totalSpins + 1,
-            totalWon: prev.totalWon + winnings,
+            totalWon: prev.totalWon + (result.payout || 0),
             totalBet: prev.totalBet + betAmount,
           }));
+          
+          setIsSpinning(false);
         });
-        
-        setIsSpinning(false);
       }
     }, spinInterval);
   };
