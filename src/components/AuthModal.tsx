@@ -71,6 +71,26 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
       }
 
       if (data?.user) {
+        // Wait a moment for the trigger to create the user profile
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify profile was created
+        let retries = 3;
+        while (retries > 0) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('*')
+            .eq('auth_user_id', data.user.id)
+            .maybeSingle();
+          
+          if (profile) {
+            break;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+          retries--;
+        }
+        
         toast.success('Account created! Welcome to JohnAI Predictions!');
         setUsername('');
         setPassword('');

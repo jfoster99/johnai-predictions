@@ -80,13 +80,34 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         setAuthUser(session.user);
-        // Load user profile
-        const { data } = await supabase
-          .from('users')
-          .select('*')
-          .eq('auth_user_id', session.user.id)
-          .maybeSingle();
-        if (data) setUser(data);
+        
+        // Load user profile with retry logic for new users
+        let retries = 5;
+        let profile = null;
+        
+        while (retries > 0 && !profile) {
+          const { data } = await supabase
+            .from('users')
+            .select('*')
+            .eq('auth_user_id', session.user.id)
+            .maybeSingle();
+          
+          if (data) {
+            profile = data;
+            setUser(data);
+            break;
+          }
+          
+          // Wait before retrying (profile might still be creating)
+          if (retries > 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          retries--;
+        }
+        
+        if (!profile) {
+          console.error('Failed to load user profile after multiple retries');
+        }
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
         setAuthUser(null);
