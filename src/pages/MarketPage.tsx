@@ -54,6 +54,7 @@ const MarketPage = () => {
       if (!user || !market) throw new Error('Not ready');
       const numShares = parseInt(shares);
       if (isNaN(numShares) || numShares <= 0) throw new Error('Invalid shares');
+      if (numShares > 10000) throw new Error('Maximum 10,000 shares per trade');
 
       const price = side === 'yes' ? market.yes_price : market.no_price;
 

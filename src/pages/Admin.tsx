@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, TrendingUp, DollarSign } from 'lucide-react';
 
-const ADMIN_PASSWORD = 'johnai';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -153,7 +153,7 @@ export default function Admin() {
       setSelectedMarket('');
     } catch (error) {
       console.error('Resolution error:', error);
-      toast.error(`Failed to resolve market: ${error.message || 'Unknown error'}`);
+      toast.error('Failed to resolve market. Please try again.');
     }
   };
 
