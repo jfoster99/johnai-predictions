@@ -115,15 +115,22 @@ export function safeParseInt(value: string | number | undefined | null, defaultV
 }
 
 /**
- * Sanitize string input to prevent XSS
- * Removes potentially dangerous characters while preserving safe content
+ * Basic input sanitization for display purposes
+ * 
+ * NOTE: This application relies on React's built-in JSX escaping for XSS prevention.
+ * React automatically escapes all values rendered in JSX, preventing XSS attacks.
+ * This function primarily removes HTML tags for cleaner text display.
+ * 
+ * For production, consider using DOMPurify for comprehensive sanitization if
+ * rendering HTML from user input (which we don't do in this app).
  */
 export function sanitizeString(input: string, maxLength: number = 1000): string {
   if (!input) return '';
   
-  // Remove HTML tags and script content
-  const withoutHtml = input.replace(/<[^>]*>/g, '');
+  // Simple tag removal for cleaner display
+  // XSS protection is handled by React's JSX escaping
+  const withoutTags = input.replace(/<[^>]*>/g, '');
   
   // Trim and limit length
-  return withoutHtml.trim().slice(0, maxLength);
+  return withoutTags.trim().slice(0, maxLength);
 }
