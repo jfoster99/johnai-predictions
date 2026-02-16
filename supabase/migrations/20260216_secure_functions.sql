@@ -18,9 +18,9 @@ DECLARE
   v_position_id UUID;
   v_existing_shares NUMERIC;
 BEGIN
-  -- Validate inputs
-  IF p_shares <= 0 THEN
-    RAISE EXCEPTION 'Shares must be positive';
+  -- Validate inputs with strict constraints
+  IF p_shares <= 0 OR p_shares > 1000000 THEN
+    RAISE EXCEPTION 'Shares must be between 1 and 1,000,000';
   END IF;
   
   IF p_price < 0 OR p_price > 100 THEN
@@ -29,6 +29,11 @@ BEGIN
   
   IF p_side NOT IN ('yes', 'no') THEN
     RAISE EXCEPTION 'Side must be yes or no';
+  END IF;
+  
+  -- Validate UUIDs are not null
+  IF p_user_id IS NULL OR p_market_id IS NULL THEN
+    RAISE EXCEPTION 'User ID and Market ID are required';
   END IF;
   
   -- Get user balance
@@ -157,9 +162,14 @@ DECLARE
   v_reel3 TEXT;
   v_payout NUMERIC := 0;
 BEGIN
-  -- Validate bet
-  IF p_bet_amount <= 0 THEN
-    RAISE EXCEPTION 'Bet must be positive';
+  -- Validate bet with strict limits
+  IF p_bet_amount <= 0 OR p_bet_amount > 1000 THEN
+    RAISE EXCEPTION 'Bet must be between 1 and 1000';
+  END IF;
+  
+  -- Validate user ID
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'User ID is required';
   END IF;
   
   -- Check balance
