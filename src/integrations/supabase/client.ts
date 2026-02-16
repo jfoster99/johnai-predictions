@@ -19,7 +19,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     headers: {
       // CSRF Protection: Include token in all requests
       // This provides additional security beyond JWT authentication
-      'X-CSRF-Token': getCsrfToken(),
+      // getCsrfToken() will generate a new token if one doesn't exist
+      get 'X-CSRF-Token'() {
+        try {
+          return getCsrfToken();
+        } catch (error) {
+          console.error('Failed to get CSRF token:', error);
+          return '';
+        }
+      },
     },
   },
 });

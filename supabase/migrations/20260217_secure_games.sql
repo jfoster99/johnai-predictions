@@ -197,6 +197,7 @@ DECLARE
   v_symbol3 TEXT;
   v_new_balance NUMERIC;
   v_random NUMERIC;
+  v_matched_symbol TEXT;  -- Moved from nested DECLARE block
   v_symbols TEXT[] := ARRAY['🍒', '💎', '⭐', '🎰', '🎁'];
   v_weights INTEGER[] := ARRAY[25, 15, 30, 20, 10];  -- Weighted probabilities
 BEGIN
@@ -272,21 +273,17 @@ BEGIN
   ELSIF v_symbol1 = v_symbol2 OR v_symbol2 = v_symbol3 OR v_symbol1 = v_symbol3 THEN
     v_win := TRUE;
     -- Determine which symbol matched
-    DECLARE
-      v_matched_symbol TEXT;
-    BEGIN
-      IF v_symbol1 = v_symbol2 THEN v_matched_symbol := v_symbol1;
-      ELSIF v_symbol2 = v_symbol3 THEN v_matched_symbol := v_symbol2;
-      ELSE v_matched_symbol := v_symbol1;
-      END IF;
+    IF v_symbol1 = v_symbol2 THEN v_matched_symbol := v_symbol1;
+    ELSIF v_symbol2 = v_symbol3 THEN v_matched_symbol := v_symbol2;
+    ELSE v_matched_symbol := v_symbol1;
+    END IF;
 
-      CASE v_matched_symbol
-        WHEN '💎' THEN v_payout := p_bet_amount * 3;
-        WHEN '🎰' THEN v_payout := p_bet_amount * 2.5;
-        WHEN '🎁' THEN v_payout := p_bet_amount * 2;
-        ELSE v_payout := p_bet_amount * 1.5;
-      END CASE;
-    END;
+    CASE v_matched_symbol
+      WHEN '💎' THEN v_payout := p_bet_amount * 3;
+      WHEN '🎰' THEN v_payout := p_bet_amount * 2.5;
+      WHEN '🎁' THEN v_payout := p_bet_amount * 2;
+      ELSE v_payout := p_bet_amount * 1.5;
+    END CASE;
   -- Special bonus: Any diamond present
   ELSIF v_symbol1 = '💎' OR v_symbol2 = '💎' OR v_symbol3 = '💎' THEN
     v_win := TRUE;
