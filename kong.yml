@@ -1,6 +1,7 @@
 _format_version: "2.1"
 
 services:
+  # PostgREST API service
   - name: rest
     url: http://rest:3000
     routes:
@@ -60,3 +61,41 @@ services:
           allowed_payload_size: 1
           size_unit: megabytes
           require_content_length: false
+
+  # Supabase Auth service (GoTrue)
+  - name: auth
+    url: http://auth:9999
+    routes:
+      - name: auth-route
+        paths:
+          - /auth/v1/
+        strip_path: true
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "http://localhost:3000"
+            - "http://127.0.0.1:3000"
+            - "https://predictions.johnfoster.cloud"
+          methods:
+            - GET
+            - HEAD
+            - PUT
+            - PATCH
+            - POST
+            - DELETE
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Authorization
+            - Content-Type
+            - X-Client-Info
+            - apikey
+          exposed_headers:
+            - Content-Range
+            - Content-Length
+            - Content-Type
+          credentials: true
+          max_age: 3600
+          preflight_continue: false

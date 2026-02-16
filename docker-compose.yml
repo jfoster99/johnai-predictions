@@ -64,6 +64,43 @@ services:
         reservations:
           memory: 64M
 
+  # GoTrue (Supabase Auth)
+  auth:
+    image: supabase/gotrue:v2.99.0
+    container_name: johnai-auth
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: https://predictions.johnfoster.cloud
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres?search_path=auth
+      GOTRUE_SITE_URL: https://predictions.johnfoster.cloud
+      GOTRUE_URI_ALLOW_LIST: "*"
+      GOTRUE_DISABLE_SIGNUP: false
+      GOTRUE_JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_MAILER_AUTOCONFIRM: true
+      GOTRUE_SMTP_HOST: ""
+      GOTRUE_SMTP_PORT: 587
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@predictions.local
+      GOTRUE_SMTP_MAX_FREQUENCY: 1s
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: true
+      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: false
+      GOTRUE_MAILER_OTP_EXP: 3600
+    networks:
+      - johnai-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
   # Kong API Gateway
   kong:
     image: kong:2.8.1
@@ -83,6 +120,7 @@ services:
       - johnai-network
     depends_on:
       - rest
+      - auth
     restart: unless-stopped
     deploy:
       resources:
