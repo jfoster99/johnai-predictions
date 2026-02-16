@@ -99,24 +99,38 @@ export default function LootBox() {
 
     // Wait for opening animation
     setTimeout(async () => {
-      const item = getRandomItem();
-      setRevealedItem(item);
-      setOpeningAnimation(false);
-
-      // Use secure function to update balance
-      const netChange = item.value - BOX_PRICE;
-      const newBalance = parseFloat(user.balance) + netChange;
-      
-      const { error } = await supabase.rpc('update_user_balance', {
-        user_id_param: user.id,
-        new_balance: Math.max(0, newBalance)
+      // SECURITY FIX: Call secure server-side function instead of client-side selection
+      // The server generates the random item to prevent manipulation
+      const { data, error } = await supabase.rpc('open_loot_box', {
+        p_user_id: user.id
       });
 
       if (error) {
-        toast.error('Failed to update balance');
+        toast.error(error.message || 'Failed to open loot box');
         setIsOpening(false);
+        setOpeningAnimation(false);
         return;
       }
+
+      if (!data || data.length === 0) {
+        toast.error('Invalid response from server');
+        setIsOpening(false);
+        setOpeningAnimation(false);
+        return;
+      }
+
+      const result = data[0];
+      
+      // Display server-determined item
+      const item: LootItem = {
+        name: result.item_name,
+        value: result.item_value,
+        rarity: result.item_rarity as Rarity,
+        emoji: result.item_emoji
+      };
+      
+      setRevealedItem(item);
+      setOpeningAnimation(false);
 
       await refreshUser();
       setIsOpening(false);
