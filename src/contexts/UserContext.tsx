@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { clearCsrfToken, generateCsrfToken } from '@/lib/csrf';
 
 type User = Tables<'users'>;
 
@@ -117,6 +118,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clear CSRF token on sign out for security
+    clearCsrfToken();
     await supabase.auth.signOut();
     setUser(null);
   };
@@ -126,6 +129,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         loadUser(session.user);
+        // Generate CSRF token on session restore
+        generateCsrfToken();
       } else {
         setLoading(false);
       }
@@ -137,8 +142,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         loadUser(session.user);
+        // Generate CSRF token on sign in
+        generateCsrfToken();
       } else {
         setUser(null);
+        // Clear CSRF token on sign out
+        clearCsrfToken();
       }
     });
 
