@@ -1,52 +1,51 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import type { User as AuthUser } from '@supabase/supabase-js';
 
 type User = Tables<'users'>;
 
 interface UserContextType {
   user: User | null;
-  authUser: AuthUser | null;
   loading: boolean;
   setUser: (user: User | null) => void;
   refreshUser: () => Promise<void>;
   signOut: () => Promise<void>;
+  signIn: (displayName: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType>({
   user: null,
-  authUser: null,
   loading: true,
   setUser: () => {},
   refreshUser: async () => {},
   signOut: async () => {},
+  signIn: async () => {},
 });
 
 export const useUser = () => useContext(UserContext);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadUser = async () => {
     try {
-      // Get current auth session
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if we have a user ID stored locally
+      const storedUserId = localStorage.getItem('johnai_user_id');
       
-      if (session?.user) {
-        setAuthUser(session.user);
-        
-        // Load user profile using auth_user_id
-        const { data } = await supabase
+      if (storedUserId) {
+        // Load user from database
+        const { data, error } = await supabase
           .from('users')
           .select('*')
-          .eq('auth_user_id', session.user.id)
+          .eq('id', storedUserId)
           .maybeSingle();
         
-        if (data) {
+        if (data && !error) {
           setUser(data);
+        } else {
+          // User doesn't exist anymore, clear storage
+          localStorage.removeItem('johnai_user_id');
         }
       }
     } catch (error) {
@@ -57,70 +56,48 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUser = async () => {
-    if (authUser) {
+    if (user) {
       const { data } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_user_id', authUser.id)
+        .eq('id', user.id)
         .maybeSingle();
       if (data) setUser(data);
     }
   };
 
+  const signIn = async (displayName: string) => {
+    try {
+      // Create a new user
+      const { data, error } = await supabase
+        .from('users')
+        .insert({ display_name: displayName })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setUser(data);
+        localStorage.setItem('johnai_user_id', data.id);
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('johnai_user_id');
     setUser(null);
-    setAuthUser(null);
   };
 
   useEffect(() => {
     loadUser();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setAuthUser(session.user);
-        
-        // Load user profile with retry logic for new users
-        let retries = 3;
-        let profile = null;
-        
-        while (retries > 0 && !profile) {
-          const { data } = await supabase
-            .from('users')
-            .select('*')
-            .eq('auth_user_id', session.user.id)
-            .maybeSingle();
-          
-          if (data) {
-            profile = data;
-            setUser(data);
-            break;
-          }
-          
-          // Wait before retrying (profile might still be creating)
-          if (retries > 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-          retries--;
-        }
-        
-        if (!profile) {
-          console.error('Failed to load user profile after multiple retries');
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setAuthUser(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, authUser, loading, setUser, refreshUser, signOut }}>
+    <UserContext.Provider value={{ user, loading, setUser, refreshUser, signOut, signIn }}>
       {children}
     </UserContext.Provider>
   );

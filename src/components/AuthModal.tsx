@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 interface AuthModalProps {
   open: boolean;
@@ -14,19 +13,14 @@ interface AuthModalProps {
 }
 
 export const AuthModal = ({ open, onClose }: AuthModalProps) => {
+  const { signIn } = useUser();
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    if (!username) {
+      toast.error('Please enter a username');
       return;
     }
 
@@ -49,55 +43,55 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
     setLoading(true);
     try {
-      // Generate fake email from username
-      const email = `${username.toLowerCase()}@predictions.local`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            display_name: username.trim(),
-          },
-        },
-      });
-
-      if (error) {
-        // Handle duplicate username
-        if (error.message.includes('already registered') || error.message.includes('already exists')) {
-          throw new Error('Username already taken');
-        }
-        throw error;
-      }
-
-      if (data?.user) {
-        // Wait a moment for the trigger to create the user profile
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Verify profile was created
-        let retries = 3;
-        while (retries > 0) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('auth_user_id', data.user.id)
-            .maybeSingle();
-          
-          if (profile) {
-            break;
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 100));
-          retries--;
-        }
-        
-        toast.success('Account created! Welcome to JohnAI Predictions!');
-        setUsername('');
-        setPassword('');
-        onClose();
-      }
+      await signIn(username.trim());
+      toast.success(`Welcome, ${username}! You've been given 10,000 JohnBucks to start trading.`);
+      setUsername('');
+      onClose();
     } catch (error: any) {
       console.error('Signup error:', error);
+      toast.error(error.message || 'Failed to create account');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Choose Your Username</DialogTitle>
+          <DialogDescription>
+            Create an account to start trading on prediction markets
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              autoFocus
+              maxLength={50}
+            />
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading ? 'Creating Account...' : 'Create Account & Start Trading'}
+          </Button>
+          
+          <p className="text-xs text-muted-foreground text-center">
+            You'll receive 10,000 JohnBucks to start trading
+          </p>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
       toast.error(error.message || 'Failed to create account');
     } finally {
       setLoading(false);
