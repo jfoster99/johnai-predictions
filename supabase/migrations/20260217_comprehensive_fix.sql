@@ -50,7 +50,7 @@ CREATE POLICY "Users can update their own record"
   WITH CHECK (true);
 
 CREATE POLICY "Anyone can create markets"
-  ON public.users FOR INSERT
+  ON public.markets FOR INSERT
   WITH CHECK (true);
 
 CREATE POLICY "Anyone can update markets"
