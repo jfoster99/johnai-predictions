@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Shield, TrendingUp, DollarSign } from 'lucide-react';
+import { safeParseFloat, adminResolveSchema, adminGiveFundsSchema } from '@/lib/validation';
 
-const ADMIN_PASSWORD = 'johnai';
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -47,6 +48,13 @@ export default function Admin() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent timing attacks by always checking password
+    if (!ADMIN_PASSWORD) {
+      toast.error('Admin password not configured');
+      return;
+    }
+    
     if (password === ADMIN_PASSWORD) {
       sessionStorage.setItem('admin_auth', 'true');
       setAuthenticated(true);
@@ -55,11 +63,25 @@ export default function Admin() {
     } else {
       toast.error('Invalid password');
     }
+    
+    // Clear password from memory
+    setPassword('');
   };
 
   const resolveMarket = async (resolution: 'resolved_yes' | 'resolved_no') => {
     if (!selectedMarket) {
       toast.error('Please select a market');
+      return;
+    }
+
+    // Validate inputs
+    const validationResult = adminResolveSchema.safeParse({
+      market_id: selectedMarket,
+      resolution: resolution,
+    });
+
+    if (!validationResult.success) {
+      toast.error('Invalid market resolution data');
       return;
     }
 
@@ -84,9 +106,10 @@ export default function Admin() {
 
       positions?.forEach(position => {
         console.log('Checking position:', position.side, 'vs winning side:', winningSide, 'shares:', position.shares);
-        if (position.side === winningSide && parseFloat(position.shares) > 0) {
+        const shares = safeParseFloat(position.shares, 0);
+        if (position.side === winningSide && shares > 0) {
           // Each winning share pays $1
-          const payout = parseFloat(position.shares);
+          const payout = shares;
           payouts[position.user_id] = (payouts[position.user_id] || 0) + payout;
           console.log('Added payout:', payout, 'for user:', position.user_id);
         }
@@ -108,7 +131,8 @@ export default function Admin() {
         }
 
         console.log('Current balance for user', userId, ':', userData.balance);
-        const newBalance = parseFloat(userData.balance) + payout;
+        const currentBalance = safeParseFloat(userData.balance, 0);
+        const newBalance = currentBalance + payout;
         console.log('New balance:', newBalance);
         
         const { error: updateError } = await supabase
@@ -151,7 +175,7 @@ export default function Admin() {
       
       loadData();
       setSelectedMarket('');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Resolution error:', error);
       toast.error(`Failed to resolve market: ${error.message || 'Unknown error'}`);
     }
@@ -163,24 +187,41 @@ export default function Admin() {
       return;
     }
 
-    const amount = parseFloat(johnbucksAmount);
-    if (isNaN(amount)) {
-      toast.error('Invalid amount');
+    const amount = safeParseFloat(johnbucksAmount, 0);
+
+    // Validate inputs
+    const validationResult = adminGiveFundsSchema.safeParse({
+      user_id: selectedUser,
+      amount: amount,
+    });
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.errors[0]?.message || 'Invalid input';
+      toast.error(errorMessage);
       return;
     }
 
     const user = users.find(u => u.id === selectedUser);
     if (!user) return;
 
+    const currentBalance = safeParseFloat(user.balance, 0);
+    const newBalance = currentBalance + amount;
+
+    // Prevent balance overflow
+    if (newBalance > 1000000000 || newBalance < 0) {
+      toast.error('Resulting balance would be invalid');
+      return;
+    }
+
     const { error } = await supabase
       .from('users')
-      .update({ balance: parseFloat(user.balance) + amount })
+      .update({ balance: newBalance })
       .eq('id', selectedUser);
 
     if (error) {
       toast.error('Failed to update balance');
     } else {
-      toast.success(`Added ${amount} JohnBucks to ${user.display_name}`);
+      toast.success(`${amount >= 0 ? 'Added' : 'Removed'} ${Math.abs(amount)} JohnBucks ${amount >= 0 ? 'to' : 'from'} ${user.display_name}`);
       loadData();
       setSelectedUser('');
       setJohnbucksAmount('');
@@ -306,7 +347,7 @@ export default function Admin() {
                   <SelectContent>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.display_name} (${parseFloat(user.balance).toLocaleString()})
+                        {user.display_name} (${safeParseFloat(user.balance, 0).toLocaleString()})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -349,7 +390,7 @@ export default function Admin() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Volume</p>
-                      <p className="font-bold">${parseFloat(market.total_volume).toFixed(0)}</p>
+                      <p className="font-bold">${safeParseFloat(market.total_volume, 0).toFixed(0)}</p>
                     </div>
                   </div>
                 ))

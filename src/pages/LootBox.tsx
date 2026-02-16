@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
 import { Package, Sparkles, TrendingUp } from 'lucide-react';
+import { safeParseFloat } from '@/lib/validation';
 
 type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
@@ -88,7 +89,8 @@ export default function LootBox() {
       return;
     }
 
-    if (parseFloat(user.balance) < BOX_PRICE) {
+    const userBalance = safeParseFloat(user.balance, 0);
+    if (userBalance < BOX_PRICE) {
       toast.error(`You need ${BOX_PRICE} JohnBucks to open a box!`);
       return;
     }
@@ -100,7 +102,7 @@ export default function LootBox() {
     // Deduct box price
     const { error: deductError } = await supabase
       .from('users')
-      .update({ balance: parseFloat(user.balance) - BOX_PRICE })
+      .update({ balance: userBalance - BOX_PRICE })
       .eq('id', user.id);
 
     if (deductError) {
@@ -117,7 +119,7 @@ export default function LootBox() {
       setOpeningAnimation(false);
 
       // Add item value to balance
-      const newBalance = parseFloat(user.balance) - BOX_PRICE + item.value;
+      const newBalance = userBalance - BOX_PRICE + item.value;
       await supabase
         .from('users')
         .update({ balance: newBalance })
@@ -204,16 +206,16 @@ export default function LootBox() {
           <div className="space-y-4">
             <Button
               onClick={openBox}
-              disabled={isOpening || !user || parseFloat(user?.balance || '0') < BOX_PRICE}
+              disabled={isOpening || !user || safeParseFloat(user?.balance || '0', 0) < BOX_PRICE}
               className="w-full h-14 text-lg"
               size="lg"
             >
               {isOpening ? 'Opening...' : `Open Box (${BOX_PRICE} JB)`}
             </Button>
             
-            {user && parseFloat(user.balance) < BOX_PRICE && (
+            {user && safeParseFloat(user.balance, 0) < BOX_PRICE && (
               <p className="text-center text-sm text-red-500">
-                Insufficient balance. You need {BOX_PRICE - parseFloat(user.balance)} more JB.
+                Insufficient balance. You need {BOX_PRICE - safeParseFloat(user.balance, 0)} more JB.
               </p>
             )}
           </div>

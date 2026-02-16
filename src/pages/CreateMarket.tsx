@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Eye } from 'lucide-react';
+import { marketSchema, sanitizeString } from '@/lib/validation';
 
 const CATEGORIES = ['Politics', 'Sports', 'Crypto', 'Memes', 'Tech', 'Entertainment', 'General'];
 
@@ -27,18 +28,37 @@ const CreateMarket = () => {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Please set up your account first');
-      if (!question.trim()) throw new Error('Question is required');
-      if (!resolutionDate) throw new Error('Resolution date is required');
+
+      // Sanitize inputs to prevent XSS
+      const sanitizedQuestion = sanitizeString(question, 200);
+      const sanitizedDescription = sanitizeString(description, 1000);
+      const sanitizedCriteria = sanitizeString(resolutionCriteria, 500);
+
+      // Validate input with Zod schema
+      const validationResult = marketSchema.safeParse({
+        question: sanitizedQuestion,
+        description: sanitizedDescription || null,
+        category,
+        resolution_date: new Date(resolutionDate).toISOString(),
+        resolution_criteria: sanitizedCriteria || null,
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid input';
+        throw new Error(errorMessage);
+      }
+
+      const validatedData = validationResult.data;
 
       const { data, error } = await supabase
         .from('markets')
         .insert({
           creator_id: user.id,
-          question: question.trim(),
-          description: description.trim() || null,
-          category,
-          resolution_date: new Date(resolutionDate).toISOString(),
-          resolution_criteria: resolutionCriteria.trim() || null,
+          question: validatedData.question,
+          description: validatedData.description,
+          category: validatedData.category,
+          resolution_date: validatedData.resolution_date,
+          resolution_criteria: validatedData.resolution_criteria,
         })
         .select()
         .single();
