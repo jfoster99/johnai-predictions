@@ -54,6 +54,7 @@ const MarketPage = () => {
       if (!user || !market) throw new Error('Not ready');
       const numShares = parseInt(shares);
       if (isNaN(numShares) || numShares <= 0) throw new Error('Invalid shares');
+      if (numShares > 1_000_000) throw new Error('Shares exceed maximum limit');
 
       const price = side === 'yes' ? market.yes_price : market.no_price;
 
@@ -66,7 +67,10 @@ const MarketPage = () => {
         p_price: price
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Trade execution error:', error);
+        throw new Error('Failed to execute trade. Please try again.');
+      }
 
       // Update market price (simple AMM: price moves 1% per 10 shares)
       const priceShift = (numShares / 10) * 0.01;
