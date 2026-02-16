@@ -29,8 +29,8 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           
-          # Create .env content locally
-          cat > /tmp/deploy_env <<'ENVEOF'
+          # Create .env content locally with expanded variables
+          cat > /tmp/deploy_env << ENVEOF
           VITE_SUPABASE_PROJECT_ID="local"
           VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
           VITE_SUPABASE_URL="https://predictions.johnfoster.cloud/api"
@@ -107,10 +107,6 @@ jobs:
             
             # Check if Cloudflare tunnel is connected
             if docker compose ps | grep -q "cloudflared.*Up"; then
-              echo "Cloudflare tunnel is connected"
-            else
-              echo "Cloudflare tunnel is not connected"
-              echo "✅ Cloudflare tunnel is connected"
               echo "Cloudflare tunnel is connected"
             else
               echo "Cloudflare tunnel is not connected"
