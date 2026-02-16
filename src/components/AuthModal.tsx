@@ -15,13 +15,12 @@ interface AuthModalProps {
 
 export const AuthModal = ({ open, onClose }: AuthModalProps) => {
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !displayName) {
+    if (!username || !password) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -31,36 +30,50 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
       return;
     }
 
-    if (displayName.length < 2 || displayName.length > 50) {
-      toast.error('Display name must be 2-50 characters');
+    if (username.length < 2 || username.length > 50) {
+      toast.error('Username must be 2-50 characters');
       return;
     }
 
-    // Prevent XSS in display name
-    if (/<script|javascript:|on\w+=/i.test(displayName)) {
-      toast.error('Invalid characters in display name');
+    // Validate username format (alphanumeric, underscore, hyphen only)
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      toast.error('Username can only contain letters, numbers, underscores, and hyphens');
+      return;
+    }
+
+    // Prevent XSS in username
+    if (/<script|javascript:|on\w+=/i.test(username)) {
+      toast.error('Invalid characters in username');
       return;
     }
 
     setLoading(true);
     try {
+      // Generate fake email from username
+      const email = `${username.toLowerCase()}@predictions.local`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            display_name: displayName.trim(),
+            display_name: username.trim(),
           },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle duplicate username
+        if (error.message.includes('already registered') || error.message.includes('already exists')) {
+          throw new Error('Username already taken');
+        }
+        throw error;
+      }
 
       if (data?.user) {
         toast.success('Account created! Welcome to JohnAI Predictions!');
-        setEmail('');
+        setUsername('');
         setPassword('');
-        setDisplayName('');
         onClose();
       }
     } catch (error: any) {
@@ -73,13 +86,16 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Please enter email and password');
+    if (!username || !password) {
+      toast.error('Please enter username and password');
       return;
     }
 
     setLoading(true);
     try {
+      // Generate fake email from username
+      const email = `${username.toLowerCase()}@predictions.local`;
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -89,13 +105,13 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
       if (data?.user) {
         toast.success('Welcome back!');
-        setEmail('');
+        setUsername('');
         setPassword('');
         onClose();
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error('Invalid email or password');
+      toast.error('Invalid username or password');
     } finally {
       setLoading(false);
     }
@@ -120,15 +136,16 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
           <TabsContent value="login" className="space-y-4 mt-4">
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="login-email">Email</Label>
+                <Label htmlFor="login-username">Username</Label>
                 <Input
-                  id="login-email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="login-username"
+                  type="text"
+                  placeholder="your_username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                   disabled={loading}
+                  autoComplete="username"
                 />
               </div>
               <div className="space-y-2">
@@ -142,6 +159,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
                   required
                   minLength={8}
                   disabled={loading}
+                  autoComplete="current-password"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
@@ -154,33 +172,23 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
           <TabsContent value="signup" className="space-y-4 mt-4">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-name">Display Name</Label>
+                <Label htmlFor="signup-username">Username</Label>
                 <Input
-                  id="signup-name"
+                  id="signup-username"
                   type="text"
-                  placeholder="Your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="your_username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                   minLength={2}
                   maxLength={50}
                   disabled={loading}
+                  autoComplete="username"
+                  pattern="[a-zA-Z0-9_-]+"
                 />
                 <p className="text-xs text-muted-foreground">
-                  {displayName.length}/50 characters
+                  {username.length}/50 characters • Letters, numbers, _ and - only
                 </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={loading}
-                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
@@ -193,6 +201,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
                   required
                   minLength={8}
                   disabled={loading}
+                  autoComplete="new-password"
                 />
                 <p className="text-xs text-muted-foreground">
                   Minimum 8 characters
@@ -208,7 +217,7 @@ export const AuthModal = ({ open, onClose }: AuthModalProps) => {
 
         <DialogFooter className="text-xs text-center text-muted-foreground">
           <p className="w-full">
-            By continuing, you agree to our terms of service
+            Your account is local to JohnAI Predictions
           </p>
         </DialogFooter>
       </DialogContent>
