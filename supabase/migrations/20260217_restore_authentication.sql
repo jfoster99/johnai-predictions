@@ -256,6 +256,143 @@ BEGIN
 END;
 $$;
 
+-- Update play_slots to verify authentication
+CREATE OR REPLACE FUNCTION public.play_slots(p_user_id UUID, p_bet_amount NUMERIC)
+RETURNS TABLE (
+  won BOOLEAN,
+  payout NUMERIC,
+  symbols TEXT[]
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_balance NUMERIC;
+  v_win BOOLEAN;
+  v_payout NUMERIC := 0;
+  v_symbols TEXT[] := ARRAY[]::TEXT[];
+  v_random INTEGER;
+BEGIN
+  -- Verify authentication
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  -- Verify user ownership
+  IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = p_user_id AND auth_user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'Unauthorized: Cannot play slots for another user';
+  END IF;
+
+  -- Validate bet amount
+  IF p_bet_amount < 1 OR p_bet_amount > 1000 THEN
+    RAISE EXCEPTION 'Invalid bet: must be between 1 and 1,000';
+  END IF;
+
+  SELECT balance INTO v_balance FROM public.users WHERE id = p_user_id;
+
+  IF v_balance < p_bet_amount THEN
+    RAISE EXCEPTION 'Insufficient balance';
+  END IF;
+
+  -- Deduct bet
+  UPDATE public.users SET balance = balance - p_bet_amount WHERE id = p_user_id;
+
+  -- Generate random result (simplified)
+  v_random := floor(random() * 100)::INTEGER;
+
+  IF v_random < 10 THEN  -- 10% chance to win
+    v_win := TRUE;
+    v_payout := p_bet_amount * 5;
+    UPDATE public.users SET balance = balance + v_payout WHERE id = p_user_id;
+  ELSE
+    v_win := FALSE;
+  END IF;
+
+  v_symbols := ARRAY['🎰', '🎰', '🎰'];
+
+  RETURN QUERY SELECT v_win, v_payout, v_symbols;
+END;
+$$;
+
+-- Update admin_grant_johnbucks to verify authentication
+CREATE OR REPLACE FUNCTION public.admin_grant_johnbucks(
+  p_user_id UUID,
+  p_amount NUMERIC
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Verify authentication
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  -- Verify admin role
+  IF NOT EXISTS (
+    SELECT 1 FROM auth.users 
+    WHERE id = auth.uid() 
+    AND raw_user_meta_data->>'role' = 'admin'
+  ) THEN
+    RAISE EXCEPTION 'Unauthorized: Admin access required';
+  END IF;
+
+  -- Validate amount
+  IF p_amount IS NULL OR NOT (p_amount >= 0 AND p_amount <= 1000000) THEN
+    RAISE EXCEPTION 'Invalid amount: must be between 0 and 1,000,000';
+  END IF;
+
+  IF NOT (p_amount = FLOOR(p_amount)) THEN
+    RAISE EXCEPTION 'Invalid amount: must be a whole number';
+  END IF;
+
+  -- Grant JohnBucks
+  UPDATE public.users 
+  SET balance = balance + p_amount 
+  WHERE id = p_user_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'User not found';
+  END IF;
+END;
+$$;
+
+-- Update update_user_balance to verify authentication
+CREATE OR REPLACE FUNCTION public.update_user_balance(p_user_id UUID, p_amount NUMERIC)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- Verify authentication
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  -- Only allow users to update their own balance OR admin role
+  IF NOT EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = p_user_id 
+    AND (auth_user_id = auth.uid() OR auth.uid() IN (
+      SELECT id FROM auth.users WHERE raw_user_meta_data->>'role' = 'admin'
+    ))
+  ) THEN
+    RAISE EXCEPTION 'Unauthorized: Cannot modify another users balance';
+  END IF;
+
+  -- Validate amount
+  IF p_amount IS NULL OR p_amount < 0 THEN
+    RAISE EXCEPTION 'Invalid amount: must be non-negative';
+  END IF;
+
+  -- Update balance
+  UPDATE public.users 
+  SET balance = p_amount 
+  WHERE id = p_user_id;
+END;
+$$;
+
 -- ============================================================================
 -- STEP 4: Create trigger to auto-create user profile on signup
 -- ============================================================================
@@ -289,10 +426,16 @@ CREATE TRIGGER on_auth_user_created
 -- Revoke public access to functions
 REVOKE EXECUTE ON FUNCTION public.execute_trade(UUID, UUID, TEXT, NUMERIC, NUMERIC) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.resolve_market(UUID, TEXT, UUID) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.play_slots(UUID, NUMERIC) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.admin_grant_johnbucks(UUID, NUMERIC) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.update_user_balance(UUID, NUMERIC) FROM PUBLIC;
 
 -- Grant to authenticated users only
 GRANT EXECUTE ON FUNCTION public.execute_trade(UUID, UUID, TEXT, NUMERIC, NUMERIC) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.resolve_market(UUID, TEXT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.play_slots(UUID, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_grant_johnbucks(UUID, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.update_user_balance(UUID, NUMERIC) TO authenticated;
 
 -- Update table permissions
 REVOKE ALL ON public.users FROM PUBLIC;
