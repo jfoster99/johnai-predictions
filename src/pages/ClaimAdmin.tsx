@@ -48,7 +48,9 @@ export default function ClaimAdmin() {
       console.log('Result set:', data);
 
       if (data.success) {
-        toast.success('Admin status granted! Please refresh the page.');
+        toast.success('Admin status granted! Refreshing session...');
+        // Refresh the auth session so the updated role is reflected immediately
+        await supabase.auth.refreshSession();
         setTimeout(() => {
           window.location.reload();
         }, 2000);
@@ -88,8 +90,8 @@ export default function ClaimAdmin() {
             <CardTitle>Claim Admin Status</CardTitle>
           </div>
           <CardDescription>
-            This is a one-time setup function. The first user to claim admin status will become the administrator
-            of this prediction market platform.
+            Claim admin status for this prediction market platform.
+            Only the pre-configured administrator email can use this function.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -125,7 +127,7 @@ export default function ClaimAdmin() {
           )}
 
           <div className="text-xs text-muted-foreground text-center">
-            This function can only be used once. If an admin already exists, this will fail.
+            This function only works for the pre-configured admin account. Unauthorized attempts are logged.
           </div>
         </CardContent>
       </Card>
