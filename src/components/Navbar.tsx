@@ -77,6 +77,17 @@ export const Navbar = () => {
               <span className={`text-[10px] ${location.pathname === to ? 'text-primary' : 'text-muted-foreground'}`}>{label}</span>
             </Link>
           ))}
+          {user ? (
+            <button onClick={signOut} className="flex flex-col items-center gap-0.5">
+              <LogOut className="h-5 w-5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground">Sign Out</span>
+            </button>
+          ) : (
+            <button onClick={() => setShowAuth(true)} className="flex flex-col items-center gap-0.5">
+              <User className="h-5 w-5 text-primary" />
+              <span className="text-[10px] text-primary">Sign In</span>
+            </button>
+          )}
         </nav>
       </div>
     </header>
