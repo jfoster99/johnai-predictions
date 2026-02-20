@@ -8,6 +8,7 @@ type User = Tables<'users'>;
 
 interface UserContextType {
   user: User | null;
+  authUser: SupabaseUser | null;
   loading: boolean;
   setUser: (user: User | null) => void;
   refreshUser: () => Promise<void>;
@@ -18,6 +19,7 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType>({
   user: null,
+  authUser: null,
   loading: true,
   setUser: () => {},
   refreshUser: async () => {},
@@ -30,21 +32,25 @@ export const useUser = () => useContext(UserContext);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [authUser, setAuthUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUser = async (authUser: SupabaseUser | null) => {
-    if (!authUser) {
+  const loadUser = async (supabaseAuthUser: SupabaseUser | null) => {
+    if (!supabaseAuthUser) {
+      setAuthUser(null);
       setUser(null);
       setLoading(false);
       return;
     }
+
+    setAuthUser(supabaseAuthUser);
 
     try {
       // Load user profile from database using auth_user_id
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_user_id', authUser.id)
+        .eq('auth_user_id', supabaseAuthUser.id)
         .maybeSingle();
       
       if (data && !error) {
@@ -60,9 +66,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUser = async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      await loadUser(authUser);
+    const { data: { user: currentAuthUser } } = await supabase.auth.getUser();
+    if (currentAuthUser) {
+      await loadUser(currentAuthUser);
     }
   };
 
@@ -122,6 +128,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     clearCsrfToken();
     await supabase.auth.signOut();
     setUser(null);
+    setAuthUser(null);
   };
 
   useEffect(() => {
@@ -146,6 +153,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         generateCsrfToken();
       } else {
         setUser(null);
+        setAuthUser(null);
         // Clear CSRF token on sign out
         clearCsrfToken();
       }
@@ -155,7 +163,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <UserContext.Provider value={{ user, loading, setUser, refreshUser, signOut, signIn, signUp }}>
+    <UserContext.Provider value={{ user, authUser, loading, setUser, refreshUser, signOut, signIn, signUp }}>
       {children}
     </UserContext.Provider>
   );
