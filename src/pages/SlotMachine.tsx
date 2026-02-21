@@ -10,8 +10,8 @@ import { Coins, TrendingUp, Sparkles } from 'lucide-react';
 
 const SYMBOLS = ['🍒', '💎', '⭐', '🎰', '🎁'];
 
-// Weighted probabilities for each symbol
-const SYMBOL_WEIGHTS = [25, 15, 30, 20, 10]; // Percentages
+// Vegas-realistic weighted probabilities: 🍒=40%, ⭐=30%, 🎰=15%, 🎁=10%, 💎=5%
+const SYMBOL_WEIGHTS = [40, 5, 30, 15, 10]; // Percentages
 
 export default function SlotMachine() {
   const { user, refreshUser } = useUser();
@@ -37,27 +37,13 @@ export default function SlotMachine() {
   const calculateWinnings = (reels: string[], betAmount: number) => {
     const [r1, r2, r3] = reels;
     
-    // Three matching symbols - JACKPOT!
+    // Only three matching symbols pay (Vegas-style)
     if (r1 === r2 && r2 === r3) {
-      if (r1 === '💎') return betAmount * 20; // Diamond jackpot
-      if (r1 === '🎰') return betAmount * 15; // Slot machine jackpot
-      if (r1 === '🎁') return betAmount * 12; // Gift jackpot
-      if (r1 === '🍒') return betAmount * 8;  // Cherry jackpot
-      if (r1 === '⭐') return betAmount * 5;  // Star jackpot
-    }
-    
-    // Two matching symbols
-    if (r1 === r2 || r2 === r3 || r1 === r3) {
-      const matchedSymbol = r1 === r2 ? r1 : r2 === r3 ? r2 : r1;
-      if (matchedSymbol === '💎') return betAmount * 3;
-      if (matchedSymbol === '🎰') return betAmount * 2.5;
-      if (matchedSymbol === '🎁') return betAmount * 2;
-      return betAmount * 1.5;
-    }
-    
-    // Special bonus: Any diamond present
-    if (reels.includes('💎')) {
-      return betAmount * 0.5; // 50% of bet back
+      if (r1 === '💎') return betAmount * 50; // Diamond jackpot (rare: ~0.01%)
+      if (r1 === '🎁') return betAmount * 20; // Gift jackpot (~0.1%)
+      if (r1 === '🎰') return betAmount * 15; // Slot machine jackpot (~0.34%)
+      if (r1 === '🍒') return betAmount * 10; // Cherry jackpot (~6.4%)
+      if (r1 === '⭐') return betAmount * 8;  // Star jackpot (~2.7%)
     }
     
     // No match
@@ -162,7 +148,7 @@ export default function SlotMachine() {
             🎰 JohnBucks Slots
           </h1>
           <p className="text-muted-foreground">
-            Try your luck! The odds are in your favor with 110% expected returns!
+            Try your luck! Vegas-style odds with ~94% return to player.
           </p>
         </div>
 
@@ -278,31 +264,23 @@ export default function SlotMachine() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 rounded">
                     <span className="text-lg">💎 💎 💎</span>
-                    <span className="font-bold text-yellow-400">20x</span>
+                    <span className="font-bold text-yellow-400">50x</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded">
-                    <span className="text-lg">🎰 🎰 🎰</span>
-                    <span className="font-bold text-purple-400">15x</span>
+                    <span className="text-lg">🎁 🎁 🎁</span>
+                    <span className="font-bold text-purple-400">20x</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-pink-500/20 to-pink-600/20 rounded">
-                    <span className="text-lg">🎁 🎁 🎁</span>
-                    <span className="font-bold text-pink-400">12x</span>
+                    <span className="text-lg">🎰 🎰 🎰</span>
+                    <span className="font-bold text-pink-400">15x</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-red-500/20 to-red-600/20 rounded">
                     <span className="text-lg">🍒 🍒 🍒</span>
-                    <span className="font-bold text-red-400">8x</span>
+                    <span className="font-bold text-red-400">10x</span>
                   </div>
                   <div className="flex justify-between items-center p-2 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded">
                     <span className="text-lg">⭐ ⭐ ⭐</span>
-                    <span className="font-bold text-blue-400">5x</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-secondary rounded">
-                    <span className="text-lg">Any 2 matching</span>
-                    <span className="font-bold">1.5-3x</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-secondary rounded">
-                    <span className="text-lg">Any 💎</span>
-                    <span className="font-bold">0.5x</span>
+                    <span className="font-bold text-blue-400">8x</span>
                   </div>
                 </div>
               </CardContent>
