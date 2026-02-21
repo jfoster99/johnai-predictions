@@ -6,7 +6,82 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useUser } from '@/contexts/UserContext';
-import { Coins, TrendingUp, Sparkles } from 'lucide-react';
+import { Coins, TrendingUp, Sparkles, X } from 'lucide-react';
+
+const POP_UP_ADS = [
+  {
+    title: "🚨 CONGRATULATIONS! 🚨",
+    body: "You are the 1,000,000th visitor! Click here to claim your free JohnBucks* \n\n*JohnBucks not included.",
+    cta: "CLAIM NOW (don't)",
+  },
+  {
+    title: "💊 Grindset Pills™",
+    body: "Tired of winning? Try our new Grindset Pills™ and lose even faster! Side effects include: more gambling.",
+    cta: "Buy 3 Get 0 Free",
+  },
+  {
+    title: "📈 Hot Stock Tip!",
+    body: "Our AI predicts the market will go UP or DOWN today. Subscribe to TrustMeBro Premium to find out which!",
+    cta: "Subscribe ($99/mo)",
+  },
+  {
+    title: "🤖 Meet SlotsBot™",
+    body: "SlotsBot plays the slots FOR you while you sleep! It loses money automatically so you don't have to be awake for the disappointment.",
+    cta: "Let it lose for me",
+  },
+  {
+    title: "🧘 Gambling Mindfulness™",
+    body: "Have you tried being present in the moment as you watch your JohnBucks disappear? It's very calming actually.",
+    cta: "Namaste (spin again)",
+  },
+  {
+    title: "🏆 You're a Winner!",
+    body: "Not at slots necessarily. But somewhere, somehow, you are winning at something. We just can't say what.",
+    cta: "Thanks I needed that",
+  },
+  {
+    title: "🍕 PizzaToken™ ICO",
+    body: "Back a cryptocurrency backed by REAL pizza. Floor price: 1 slice. Market cap: whatever's in the box.",
+    cta: "Invest in pizza",
+  },
+  {
+    title: "📞 Your Mom Called",
+    body: "She wants to know if you've eaten. She also said you should stop gambling but she said it nicely.",
+    cta: "I'll call her later",
+  },
+];
+
+interface PopUpAd {
+  title: string;
+  body: string;
+  cta: string;
+}
+
+function AdPopup({ ad, onClose }: { ad: PopUpAd; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-card border-2 border-primary/40 rounded-2xl shadow-2xl max-w-sm w-full p-6 relative animate-in zoom-in duration-300">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Close ad"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <div className="text-center space-y-3">
+          <h3 className="font-display text-xl font-bold">{ad.title}</h3>
+          <p className="text-sm text-muted-foreground whitespace-pre-line">{ad.body}</p>
+          <Button onClick={onClose} className="w-full" size="sm">
+            {ad.cta}
+          </Button>
+          <p className="text-xs text-muted-foreground/50">
+            Advertisement • Definitely Real™
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const SYMBOLS = ['🍒', '💎', '⭐', '🎰', '🎁'];
 
@@ -20,6 +95,7 @@ export default function SlotMachine() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [lastWin, setLastWin] = useState<number | null>(null);
   const [stats, setStats] = useState({ totalSpins: 0, totalWon: 0, totalBet: 0 });
+  const [activeAd, setActiveAd] = useState<PopUpAd | null>(null);
 
   const getWeightedSymbol = () => {
     const totalWeight = SYMBOL_WEIGHTS.reduce((a, b) => a + b, 0);
@@ -131,6 +207,12 @@ export default function SlotMachine() {
           }));
           
           setIsSpinning(false);
+
+          // ~30% chance to show a funny pop-up ad after each spin
+          if (Math.random() < 0.3) {
+            const ad = POP_UP_ADS[Math.floor(Math.random() * POP_UP_ADS.length)];
+            setActiveAd(ad);
+          }
         });
       }
     }, spinInterval);
@@ -142,6 +224,7 @@ export default function SlotMachine() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 py-8">
+      {activeAd && <AdPopup ad={activeAd} onClose={() => setActiveAd(null)} />}
       <div className="container max-w-4xl">
         <div className="mb-8">
           <h1 className="font-display text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">

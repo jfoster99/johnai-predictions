@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useUser } from '@/contexts/UserContext';
-import { TrendingUp, Plus, Wallet, Trophy, BarChart3, Sparkles, Package, LogOut, User } from 'lucide-react';
+import { TrendingUp, Plus, Wallet, Trophy, BarChart3, Sparkles, Package, LogOut, User, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { AuthModal } from './AuthModal';
@@ -17,6 +17,7 @@ export const Navbar = () => {
     { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { to: '/slots', label: 'Slots', icon: Sparkles },
     { to: '/lootbox', label: 'Boxes', icon: Package },
+    { to: '/doomscroll', label: 'DoomFeed', icon: Smartphone },
   ];
 
   return (
