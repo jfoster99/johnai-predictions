@@ -14,6 +14,7 @@ import Admin from "./pages/Admin";
 import ClaimAdmin from "./pages/ClaimAdmin";
 import SlotMachine from "./pages/SlotMachine";
 import LootBox from "./pages/LootBox";
+import Doomscroll from "./pages/Doomscroll";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/slots" element={<SlotMachine />} />
             <Route path="/lootbox" element={<LootBox />} />
+            <Route path="/doomscroll" element={<Doomscroll />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/claim-admin" element={<ClaimAdmin />} />
