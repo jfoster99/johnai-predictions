@@ -3,6 +3,8 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: johnai-postgres
+    security_opt:
+      - apparmor:unconfined
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
@@ -31,6 +33,8 @@ services:
   studio:
     image: supabase/studio:latest
     container_name: johnai-studio
+    security_opt:
+      - apparmor:unconfined
     environment:
       SUPABASE_URL: http://kong:8000
       STUDIO_PG_META_URL: http://meta:8080
@@ -45,6 +49,8 @@ services:
   rest:
     image: postgrest/postgrest:v12.0.1
     container_name: johnai-rest
+    security_opt:
+      - apparmor:unconfined
     environment:
       PGRST_DB_URI: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres
       PGRST_DB_SCHEMAS: public
@@ -68,6 +74,8 @@ services:
   auth:
     image: supabase/gotrue:v2.99.0
     container_name: johnai-auth
+    security_opt:
+      - apparmor:unconfined
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: 9999
@@ -105,6 +113,8 @@ services:
   kong:
     image: kong:2.8.1
     container_name: johnai-kong
+    security_opt:
+      - apparmor:unconfined
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
@@ -133,6 +143,8 @@ services:
   meta:
     image: supabase/postgres-meta:v0.68.0
     container_name: johnai-meta
+    security_opt:
+      - apparmor:unconfined
     environment:
       PG_META_PORT: 8080
       PG_META_DB_HOST: postgres
@@ -163,6 +175,8 @@ services:
         - VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
         - VITE_SUPABASE_PROJECT_ID=${VITE_SUPABASE_PROJECT_ID}
     container_name: johnai-predictions
+    security_opt:
+      - apparmor:unconfined
     ports:
       - "3000:80"
     restart: unless-stopped
@@ -183,6 +197,8 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: johnai-cloudflared
+    security_opt:
+      - apparmor:unconfined
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     restart: unless-stopped
     networks:
