@@ -58,6 +58,29 @@ jobs:
             mv /tmp/.env .env
             chmod 600 .env
             
+            echo "Rebuilding and restarting containers..."
+            docker compose --profile tunnel down
+            DOCKER_BUILDKIT=0 docker compose --profile tunnel up -d --build
+            
+            echo "Waiting for database to be ready..."
+            # Give all services time to initialize before starting health checks
+            sleep 15
+            
+            # Wait for postgres to be healthy
+            MAX_RETRIES=30
+            for i in $(seq 1 $MAX_RETRIES); do
+              if docker exec johnai-postgres pg_isready -U postgres > /dev/null 2>&1; then
+                echo "Database is ready!"
+                break
+              fi
+              if [ $i -eq $MAX_RETRIES ]; then
+                echo "Database failed to become ready"
+                exit 1
+              fi
+              echo "Waiting for database... ($i/$MAX_RETRIES)"
+              sleep 2
+            done
+            
             echo "Applying database migrations..."
             for migration in supabase/migrations/*.sql; do
               if [ -f "$migration" ]; then
@@ -65,13 +88,6 @@ jobs:
                 docker exec -i johnai-postgres psql -U postgres -d postgres < "$migration" || echo "Migration $(basename $migration) failed or already applied"
               fi
             done
-            
-            echo "Rebuilding and restarting containers..."
-            docker compose --profile tunnel down
-            docker compose --profile tunnel up -d --build
-            
-            echo "Waiting for services to start..."
-            sleep 10
             
             echo "Checking container status..."
             docker compose ps
