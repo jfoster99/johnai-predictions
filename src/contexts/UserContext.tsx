@@ -6,6 +6,8 @@ import { clearCsrfToken, generateCsrfToken } from '@/lib/csrf';
 
 type User = Tables<'users'>;
 
+const DEFAULT_USER_BALANCE = 10000;
+
 interface UserContextType {
   user: User | null;
   authUser: SupabaseUser | null;
@@ -57,6 +59,27 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setUser(data);
       } else if (error) {
         console.error('Error loading user profile:', error);
+      } else {
+        // No profile found – the signup trigger may have failed.
+        // Attempt to create the profile so the user is not left in a broken state.
+        const displayName =
+          (supabaseAuthUser.user_metadata?.display_name as string | undefined) ||
+          supabaseAuthUser.email?.split('@')[0] ||
+          'User';
+        const { data: newProfile, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            auth_user_id: supabaseAuthUser.id,
+            display_name: displayName,
+            balance: DEFAULT_USER_BALANCE,
+          })
+          .select()
+          .single();
+        if (newProfile && !insertError) {
+          setUser(newProfile);
+        } else if (insertError) {
+          console.error('Error creating user profile on login:', insertError);
+        }
       }
     } catch (error) {
       console.error('Error loading user:', error);
@@ -85,15 +108,43 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         },
       });
       
-      if (authError) throw authError;
+      if (authError) {
+        // Supabase returns '{}' as the error message when the API response body is
+        // an empty JSON object (e.g. when a DB trigger fails or the server errors).
+        // Surface a clear message instead.
+        if (!authError.message || authError.message === '{}') {
+          throw new Error('Account creation failed. Please try again or contact support.');
+        }
+        throw authError;
+      }
       
       if (!authData.user) {
         throw new Error('User creation failed');
       }
 
-      // The trigger will automatically create the user profile
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // The trigger will automatically create the user profile.
+      // Wait a moment for the trigger to complete.
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify profile was created by trigger; create it manually as a fallback.
+      const { data: existingProfile } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_user_id', authData.user.id)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            auth_user_id: authData.user.id,
+            display_name: displayName.trim(),
+            balance: DEFAULT_USER_BALANCE,
+          });
+        if (insertError) {
+          console.error('Failed to create user profile manually:', insertError);
+        }
+      }
       
       // Load the user profile
       await loadUser(authData.user);
