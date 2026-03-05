@@ -168,18 +168,21 @@ export type Database = {
       }
       users: {
         Row: {
+          auth_user_id: string | null
           balance: number
           created_at: string
           display_name: string
           id: string
         }
         Insert: {
+          auth_user_id?: string | null
           balance?: number
           created_at?: string
           display_name: string
           id?: string
         }
         Update: {
+          auth_user_id?: string | null
           balance?: number
           created_at?: string
           display_name?: string
